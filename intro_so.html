@@ -70,7 +70,7 @@
 
         /* --- CONTAINER PRINCIPAL (VIEWER) --- */
         .viewer-container {
-            margin-top: 80px; /* Espaço para o header fixo */
+            margin-top: 80px;
             padding: 20px;
             flex: 1;
             display: flex;
@@ -82,12 +82,12 @@
             background: white;
             width: 100%;
             max-width: 1000px;
-            min-height: 80vh; /* Altura mínima do slide */
+            min-height: 80vh;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             padding: 50px;
             position: relative;
-            display: none; /* Esconde slides inativos */
+            display: none;
             flex-direction: column;
             animation: fadeIn 0.4s ease;
         }
@@ -95,7 +95,7 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- ESTILOS DO CONTEÚDO (Adaptados do original) --- */
+        /* --- ESTILOS DO CONTEÚDO --- */
         h1.slide-title {
             font-size: 2.8em;
             background: linear-gradient(to right, var(--primary), var(--secondary));
@@ -128,16 +128,20 @@
         .box-info { border-color: var(--primary); background: #f4f7fe; }
         .box-history { border-color: #8e44ad; background: #fdf2f8; }
         .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
         .box-terminal { 
             background: #2d3748; 
             color: #38ef7d; 
             font-family: 'Courier New', monospace; 
             border-left: 5px solid #38ef7d;
         }
+        .box-windows { border-color: #0078d4; background: #f0f8ff; }
+        .box-linux { border-color: #f39c12; background: #fffbeb; }
 
         /* Layouts de Colunas */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; }
 
         .bullet-point {
             display: flex;
@@ -152,6 +156,74 @@
             font-weight: bold;
             font-size: 1.5em;
             margin-right: 10px;
+        }
+
+        /* Cards de Distro */
+        .distro-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .distro-card:hover { transform: translateY(-5px); }
+        .distro-card .emoji { font-size: 3em; margin-bottom: 10px; }
+        .distro-card h4 { color: var(--primary); margin-bottom: 10px; }
+        .distro-card p { font-size: 0.9em; color: var(--text-light); }
+
+        /* Estatísticas */
+        .stat-box {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .stat-box .number { font-size: 2.5em; font-weight: bold; }
+        .stat-box .label { font-size: 0.9em; opacity: 0.9; }
+
+        /* Timeline */
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .timeline-year {
+            background: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+            margin-right: 20px;
+        }
+        .timeline-content {
+            flex: 1;
+            padding: 10px 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Comparativo */
+        .vs-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .vs-box {
+            flex: 1;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .vs-divider {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--text-light);
         }
 
         /* --- CONTROLES DE NAVEGAÇÃO --- */
@@ -181,11 +253,12 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            text-decoration: none;
         }
         .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
         .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
 
-        /* --- DRAG AND DROP QUIZ (Estilos atualizados) --- */
+        /* --- DRAG AND DROP QUIZ --- */
         .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
         .col-questions, .col-answers { flex: 1; }
 
@@ -239,15 +312,35 @@
             color: white;
         }
 
+        /* Ícones de empresas */
+        .company-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .company-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .company-item .emoji { font-size: 2em; }
+        .company-item p { font-size: 0.85em; margin-top: 5px; color: var(--text-light); }
+
         /* Responsivo */
         @media (max-width: 768px) {
             .viewer-container { padding: 10px; margin-top: 70px; }
             .slide-card { padding: 25px; min-height: 70vh; }
-            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
             .drag-drop-container { flex-direction: column; }
             .classroom-header { padding: 10px 15px; }
             h1.slide-title { font-size: 2em; }
             h2.slide-subtitle { font-size: 1.5em; }
+            .company-grid { grid-template-columns: repeat(2, 1fr); }
+            .vs-container { flex-direction: column; }
+            .vs-divider { transform: rotate(90deg); }
         }
     </style>
 </head>
@@ -264,12 +357,13 @@
             </div>
         </div>
         <div class="slide-counter">
-            <span id="current-slide">1</span> / <span id="total-slides">16</span>
+            <span id="current-slide">1</span> / <span id="total-slides">25</span>
         </div>
     </header>
 
     <div class="viewer-container">
         
+        <!-- SLIDE 1: Capa -->
         <div class="slide-card active">
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
                 <div style="font-size: 5em;">🐧</div>
@@ -284,6 +378,7 @@
             </div>
         </div>
 
+        <!-- SLIDE 2: O que é Linux -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🤔 O que é Linux?</h2>
             <div class="grid-2">
@@ -301,6 +396,33 @@
             </div>
         </div>
 
+        <!-- SLIDE 3: Kernel explicado -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🧠 O que é um Kernel?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 30px;">
+                <p style="font-size: 1.2em;">O Kernel é o <strong>"tradutor"</strong> entre você e o hardware do computador.</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🎯 Analogia do Restaurante</h3>
+                    <p style="line-height: 1.8;">Imagine um restaurante:</p>
+                    <div class="bullet-point"><strong>Você</strong> = Cliente (usuário)</div>
+                    <div class="bullet-point"><strong>Garçom</strong> = Kernel</div>
+                    <div class="bullet-point"><strong>Cozinha</strong> = Hardware</div>
+                    <p style="margin-top: 15px;">Você não vai até a cozinha fazer seu pedido. O garçom (kernel) recebe seu pedido e comunica à cozinha!</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>⚙️ O Kernel gerencia:</h3>
+                    <div class="bullet-point">Memória RAM</div>
+                    <div class="bullet-point">Processador (CPU)</div>
+                    <div class="bullet-point">Disco rígido / SSD</div>
+                    <div class="bullet-point">Dispositivos (teclado, mouse...)</div>
+                    <div class="bullet-point">Rede e conexões</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: História UNIX -->
         <div class="slide-card">
             <h2 class="slide-subtitle">📜 A História Começa com UNIX</h2>
             <div class="content-box box-history">
@@ -314,6 +436,29 @@
             </div>
         </div>
 
+        <!-- SLIDE 5: Problema do UNIX -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">💰 O Problema: UNIX era Caro!</h2>
+            <div class="grid-2">
+                <div class="content-box box-warning">
+                    <h3>❌ Situação nos anos 80</h3>
+                    <div class="bullet-point">Licença custava milhares de dólares</div>
+                    <div class="bullet-point">Código-fonte era secreto</div>
+                    <div class="bullet-point">Proibido modificar ou redistribuir</div>
+                    <div class="bullet-point">Estudantes não tinham acesso</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🤔 Analogia</h3>
+                    <p style="line-height: 1.8;">Imagine comprar um carro e <strong>não poder</strong>:</p>
+                    <div class="bullet-point">Abrir o capô para ver o motor</div>
+                    <div class="bullet-point">Trocar uma peça por conta própria</div>
+                    <div class="bullet-point">Emprestar para um amigo dirigir</div>
+                    <p style="margin-top: 10px;">Era assim com o UNIX!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Revolução Software Livre -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🆓 A Revolução do Software Livre</h2>
             <div class="grid-2">
@@ -334,6 +479,30 @@
             </div>
         </div>
 
+        <!-- SLIDE 7: Richard Stallman -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👨‍🔬 Richard Stallman: O Idealista</h2>
+            <div class="content-box box-history" style="text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🧔</div>
+                <p style="font-size: 1.2em;"><strong>"Software livre é uma questão de liberdade, não de preço."</strong></p>
+                <p style="margin-top: 10px; color: var(--text-light);">— Richard Stallman</p>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>🎯 Contribuições</h3>
+                    <div class="bullet-point">Fundou a Free Software Foundation</div>
+                    <div class="bullet-point">Criou a licença GPL</div>
+                    <div class="bullet-point">Desenvolveu o editor Emacs</div>
+                    <div class="bullet-point">Iniciou o compilador GCC</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💭 Filosofia</h3>
+                    <p>Stallman acredita que o software deve ser como uma receita de bolo: você pode ver os ingredientes, modificar ao seu gosto e compartilhar com os amigos!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Linus Torvalds -->
         <div class="slide-card">
             <h2 class="slide-subtitle">👨‍💻 O Criador: Linus Torvalds</h2>
             <div class="content-box box-info">
@@ -349,6 +518,42 @@
             </div>
         </div>
 
+        <!-- SLIDE 9: Timeline do Linux -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📅 A Evolução do Linux</h2>
+            <div class="timeline-item">
+                <div class="timeline-year">1991</div>
+                <div class="timeline-content">
+                    <strong>Nascimento</strong> - Linus lança a versão 0.01 com apenas 10.000 linhas de código
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-year">1994</div>
+                <div class="timeline-content">
+                    <strong>Versão 1.0</strong> - Primeira versão estável, pronta para uso real
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-year">1996</div>
+                <div class="timeline-content">
+                    <strong>Tux nasce</strong> - O pinguim se torna mascote oficial do Linux
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-year">2004</div>
+                <div class="timeline-content">
+                    <strong>Ubuntu surge</strong> - Linux se torna acessível para usuários comuns
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-year">Hoje</div>
+                <div class="timeline-content">
+                    <strong>Domínio mundial</strong> - 100% dos supercomputadores, Android, servidores...
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: União GNU + Linux -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🔗 A União Perfeita</h2>
             <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 30px; font-size: 1.2em; font-weight: bold;">
@@ -368,8 +573,12 @@
                     <p>Gerenciamento de hardware, memória, processos e drivers.</p>
                 </div>
             </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                💡 Por isso, tecnicamente o nome correto é <strong>GNU/Linux</strong>!
+            </div>
         </div>
 
+        <!-- SLIDE 11: Por que usar Linux -->
         <div class="slide-card">
             <h2 class="slide-subtitle">⭐ Por que usar Linux?</h2>
             <div class="grid-3">
@@ -400,152 +609,331 @@
             </div>
         </div>
 
+        <!-- SLIDE 12: Comparativo Windows vs Linux (Conceito) -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🆚 Windows vs Linux: Entendendo as Diferenças</h2>
+            <div class="vs-container">
+                <div class="vs-box content-box box-windows">
+                    <div style="font-size: 3em;">🪟</div>
+                    <h3 style="color: #0078d4;">Windows</h3>
+                    <p>Como um <strong>apartamento alugado</strong></p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">Você mora lá, mas não pode derrubar paredes ou pintar sem permissão do dono.</p>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="vs-box content-box box-linux">
+                    <div style="font-size: 3em;">🐧</div>
+                    <h3 style="color: #f39c12;">Linux</h3>
+                    <p>Como uma <strong>casa própria</strong></p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">Você pode reformar, ampliar, pintar e até emprestar a planta para os vizinhos!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Comparativo Detalhado -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📊 Comparativo Detalhado</h2>
+            <div class="grid-2">
+                <div class="content-box box-windows">
+                    <h3 style="color: #0078d4;">🪟 Windows</h3>
+                    <div class="bullet-point">💰 Licença paga (~R$800+)</div>
+                    <div class="bullet-point">🔒 Código fechado (secreto)</div>
+                    <div class="bullet-point">🦠 Alvo principal de vírus</div>
+                    <div class="bullet-point">🖱️ Foco em interface gráfica</div>
+                    <div class="bullet-point">🎮 Melhor suporte a jogos</div>
+                    <div class="bullet-point">📞 Suporte técnico oficial</div>
+                </div>
+                <div class="content-box box-linux">
+                    <h3 style="color: #f39c12;">🐧 Linux</h3>
+                    <div class="bullet-point">🆓 Gratuito (sempre)</div>
+                    <div class="bullet-point">📖 Código aberto (transparente)</div>
+                    <div class="bullet-point">🛡️ Muito mais seguro</div>
+                    <div class="bullet-point">⌨️ Poderoso no terminal</div>
+                    <div class="bullet-point">🎮 Jogos melhorando (Steam)</div>
+                    <div class="bullet-point">👥 Suporte da comunidade</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 14: Mitos sobre Linux -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🚫 Mitos sobre o Linux</h2>
+            <div class="grid-2">
+                <div class="content-box box-warning">
+                    <h3>❌ "Linux é difícil"</h3>
+                    <p>Distribuições como Ubuntu e Mint são tão fáceis quanto Windows. Instalação em poucos cliques!</p>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>❌ "Não tem programas"</h3>
+                    <p>Tem alternativas para quase tudo: LibreOffice, GIMP, VLC, Chrome, Spotify...</p>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>❌ "É só pra hackers"</h3>
+                    <p>Milhões de pessoas comuns usam diariamente. Android é Linux!</p>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>❌ "Não tem suporte"</h3>
+                    <p>Comunidade ativa, fóruns, tutoriais no YouTube e documentação extensa.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 15: O que são Distribuições -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📦 O que são Distribuições (Distros)?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 30px;">
+                <p style="font-size: 1.2em;">O Linux é o <strong>motor</strong>. A Distro é o <strong>carro completo</strong>!</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🚗 Analogia dos Carros</h3>
+                    <p style="line-height: 1.8;">Imagine que o kernel Linux é um motor de carro.</p>
+                    <p>Diferentes fabricantes pegam esse motor e criam carros diferentes: uns mais luxuosos, outros mais econômicos, uns esportivos, outros familiares.</p>
+                    <p style="margin-top: 10px;"><strong>São as Distribuições!</strong></p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>📦 Uma Distro inclui:</h3>
+                    <div class="bullet-point">Kernel Linux</div>
+                    <div class="bullet-point">Interface gráfica (visual)</div>
+                    <div class="bullet-point">Programas pré-instalados</div>
+                    <div class="bullet-point">Gerenciador de pacotes</div>
+                    <div class="bullet-point">Configurações específicas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 16: Distros para Iniciantes -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🌱 Distros para Iniciantes</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Perfeitas para quem está começando!</p>
+            <div class="grid-3">
+                <div class="distro-card">
+                    <div class="emoji">🟠</div>
+                    <h4>Ubuntu</h4>
+                    <p>A mais popular. Fácil instalação, muito suporte online. Ideal para o primeiro contato.</p>
+                </div>
+                <div class="distro-card">
+                    <div class="emoji">🌿</div>
+                    <h4>Linux Mint</h4>
+                    <p>Visual parecido com Windows. Muito intuitivo. Ótimo para quem vem do Windows.</p>
+                </div>
+                <div class="distro-card">
+                    <div class="emoji">🔵</div>
+                    <h4>Zorin OS</h4>
+                    <p>Design moderno e bonito. Feito pensando em ex-usuários de Windows e Mac.</p>
+                </div>
+            </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                💡 <strong>Dica:</strong> Comece com Ubuntu ou Mint. São os mais fáceis de encontrar ajuda!
+            </div>
+        </div>
+
+        <!-- SLIDE 17: Distros para Servidores -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🏢 Distros para Servidores e Empresas</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Usadas em data centers e ambientes corporativos</p>
+            <div class="grid-3">
+                <div class="distro-card">
+                    <div class="emoji">🎩</div>
+                    <h4>Red Hat Enterprise</h4>
+                    <p>Padrão corporativo. Suporte profissional pago. Usado em bancos e governos.</p>
+                </div>
+                <div class="distro-card">
+                    <div class="emoji">🌀</div>
+                    <h4>Debian</h4>
+                    <p>Super estável. Base do Ubuntu. Favorito em servidores web.</p>
+                </div>
+                <div class="distro-card">
+                    <div class="emoji">🏔️</div>
+                    <h4>CentOS / Rocky</h4>
+                    <p>Versão gratuita do Red Hat. Muito usado em hospedagem de sites.</p>
+                </div>
+            </div>
+            <div class="content-box box-info" style="text-align: center; margin-top: 20px;">
+                🖥️ É aqui que você provavelmente vai trabalhar como profissional de redes!
+            </div>
+        </div>
+
+        <!-- SLIDE 18: Distros Avançadas -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 Distros para Avançados</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Para quem quer controle total!</p>
+            <div class="grid-2">
+                <div class="distro-card">
+                    <div class="emoji">🏗️</div>
+                    <h4>Arch Linux</h4>
+                    <p>Você constrói do zero. Instalação manual, mas aprende MUITO. "I use Arch btw" é um meme!</p>
+                </div>
+                <div class="distro-card">
+                    <div class="emoji">⚙️</div>
+                    <h4>Gentoo</h4>
+                    <p>Compila tudo do código-fonte. Performance máxima. Para os mais dedicados.</p>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 20px;">
+                <h3>🐉 Para Segurança</h3>
+                <div class="grid-2">
+                    <div>
+                        <strong>Kali Linux</strong> - Usado por profissionais de segurança e pentest
+                    </div>
+                    <div>
+                        <strong>Tails</strong> - Foco total em privacidade e anonimato
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 19: Interfaces Gráficas -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎨 Interfaces Gráficas (Desktops)</h2>
+            <div class="content-box box-info" style="text-align: center; margin-bottom: 20px;">
+                <p>No Linux, você escolhe como quer que seu computador pareça!</p>
+            </div>
+            <div class="grid-3">
+                <div class="distro-card">
+                    <div class="emoji">🦶</div>
+                    <h4>GNOME</h4>
+                    <p>Moderno e limpo. Padrão do Ubuntu. Parecido com Mac.</p>
+                </div>
+                <div class="distro-card">
+                    <div class="emoji">🔷</div>
+                    <h4>KDE Plasma</h4>
+                    <p>Muito personalizável. Visual elegante. Parecido com Windows.</p>
+                </div>
+                <div class="distro-card">
+                    <div class="emoji">🪶</div>
+                    <h4>XFCE / LXQt</h4>
+                    <p>Leves e rápidos. Ideais para computadores antigos.</p>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="text-align: center; margin-top: 20px;">
+                💡 É como trocar a decoração da casa sem mudar a estrutura!
+            </div>
+        </div>
+
+        <!-- SLIDE 20: Linux no Mundo -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🌍 Linux em Todo Lugar</h2>
             <div class="grid-2">
+                <div class="stat-box">
+                    <div class="number">100%</div>
+                    <div class="label">dos Supercomputadores</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">96%</div>
+                    <div class="label">dos Servidores Web</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">85%</div>
+                    <div class="label">dos Smartphones (Android)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">90%</div>
+                    <div class="label">da Nuvem Pública</div>
+                </div>
+            </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                🚀 Provavelmente você usou Linux hoje sem saber!
+            </div>
+        </div>
+
+        <!-- SLIDE 21: Quem usa Linux -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🏢 Quem usa Linux?</h2>
+            <div class="company-grid">
+                <div class="company-item">
+                    <div class="emoji">🔍</div>
+                    <p>Google</p>
+                </div>
+                <div class="company-item">
+                    <div class="emoji">📦</div>
+                    <p>Amazon</p>
+                </div>
+                <div class="company-item">
+                    <div class="emoji">👤</div>
+                    <p>Facebook</p>
+                </div>
+                <div class="company-item">
+                    <div class="emoji">🎬</div>
+                    <p>Netflix</p>
+                </div>
+                <div class="company-item">
+                    <div class="emoji">🐦</div>
+                    <p>Twitter</p>
+                </div>
+                <div class="company-item">
+                    <div class="emoji">🚗</div>
+                    <p>Tesla</p>
+                </div>
+                <div class="company-item">
+                    <div class="emoji">🚀</div>
+                    <p>NASA / SpaceX</p>
+                </div>
+                <div class="company-item">
+                    <div class="emoji">💹</div>
+                    <p>Bolsa de Valores</p>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
                 <div class="content-box box-info">
-                    <h3>💼 Infraestrutura Mundial</h3>
-                    <div class="bullet-point">Google, Amazon, Facebook</div>
-                    <div class="bullet-point">97% dos servidores web</div>
-                    <div class="bullet-point">100% dos Supercomputadores</div>
-                    <div class="bullet-point">Bolsas de Valores</div>
+                    <h3>📱 No seu bolso</h3>
+                    <p>Android é baseado em Linux. Seu celular roda Linux!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🏠 Na sua casa</h3>
+                    <p>Smart TVs, roteadores Wi-Fi, Alexa, geladeiras inteligentes...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 22: A Comunidade Linux -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👥 A Comunidade Linux</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Milhões de pessoas ao redor do mundo contribuem e ajudam!</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🤝 Como funciona?</h3>
+                    <div class="bullet-point">Desenvolvedores voluntários</div>
+                    <div class="bullet-point">Empresas que contribuem código</div>
+                    <div class="bullet-point">Usuários que reportam bugs</div>
+                    <div class="bullet-point">Tradutores de todo o mundo</div>
+                    <div class="bullet-point">Escritores de documentação</div>
                 </div>
                 <div class="content-box box-success">
-                    <h3>📱 No seu Bolso e Casa</h3>
-                    <div class="bullet-point">Android (Baseado em Linux)</div>
-                    <div class="bullet-point">Smart TVs</div>
-                    <div class="bullet-point">Roteadores Wi-Fi</div>
-                    <div class="bullet-point">Carros (Tesla, etc)</div>
-                </div>
-            </div>
-            <p style="text-align: center; margin-top: 20px; font-weight: bold; color: var(--primary);">
-                🚀 Até a Estação Espacial Internacional usa Linux!
-            </p>
-        </div>
-
-        <div class="slide-card">
-            <h2 class="slide-subtitle">📦 Distribuições (Distros)</h2>
-            <p style="text-align: center; margin-bottom: 20px;">O Linux é o kernel. Uma "Distro" é o pacote completo pronto para uso.</p>
-            <div class="grid-3">
-                <div class="content-box box-info">
-                    <h3>🎯 Ubuntu / Mint</h3>
-                    <p>Focados no usuário final. Fáceis de instalar e usar. Ótimos para começar.</p>
-                </div>
-                <div class="content-box box-highlight">
-                    <h3>🎩 Fedora / CentOS</h3>
-                    <p>Focados em inovação e servidores corporativos. Muito usados em empresas.</p>
-                </div>
-                <div class="content-box box-history">
-                    <h3>🦎 Debian / Arch</h3>
-                    <p>Focados em estabilidade (Debian) ou personalização extrema (Arch).</p>
+                    <h3>💬 Onde buscar ajuda?</h3>
+                    <div class="bullet-point">Fóruns (Viva o Linux, Ask Ubuntu)</div>
+                    <div class="bullet-point">Stack Overflow</div>
+                    <div class="bullet-point">Reddit (r/linux, r/linuxbrasil)</div>
+                    <div class="bullet-point">Grupos no Telegram</div>
+                    <div class="bullet-point">Canais no YouTube</div>
                 </div>
             </div>
         </div>
 
+        <!-- SLIDE 23: Cultura do Software Livre -->
         <div class="slide-card">
-            <h2 class="slide-subtitle">⌨️ O Poder do Terminal</h2>
-            <div class="content-box box-terminal" style="font-size: 1.4em; padding: 40px; text-align: center;">
-                usuario@linux:~$ █
+            <h2 class="slide-subtitle">🌱 A Cultura do Software Livre</h2>
+            <div class="content-box box-history" style="text-align: center; margin-bottom: 30px;">
+                <p style="font-size: 1.3em;">"Se eu vi mais longe, foi por estar sobre ombros de gigantes."</p>
+                <p style="margin-top: 10px; color: var(--text-light);">— Isaac Newton (e a filosofia open source!)</p>
             </div>
             <div class="grid-2">
                 <div class="content-box box-info">
-                    <h3>💡 O que é?</h3>
-                    <p>Interface de texto onde você "conversa" diretamente com o sistema. É mais rápido e poderoso que o mouse.</p>
+                    <h3>🔄 O Ciclo Virtuoso</h3>
+                    <p>Alguém cria algo útil → Compartilha com todos → Outros melhoram → Compartilham de volta → Todos ganham!</p>
                 </div>
-                <div class="content-box box-highlight">
-                    <h3>💪 Superpoderes</h3>
-                    <div class="bullet-point">Automação de tarefas</div>
-                    <div class="bullet-point">Administração remota</div>
-                    <div class="bullet-point">Controle total do PC</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="slide-card">
-            <h2 class="slide-subtitle">📝 Comandos Básicos (Navegação)</h2>
-            <div class="content-box box-terminal">
-                <div style="margin-bottom: 20px;">
-                    <span style="color: white;"># Lista arquivos da pasta</span><br>
-                    $ ls <br>
-                    Documentos  Imagens  Musica
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <span style="color: white;"># Entra em uma pasta (Change Directory)</span><br>
-                    $ cd Documentos
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <span style="color: white;"># Mostra onde você está (Print Working Directory)</span><br>
-                    $ pwd <br>
-                    /home/usuario/Documentos
+                <div class="content-box box-success">
+                    <h3>🎁 Exemplos além do Linux</h3>
+                    <div class="bullet-point">Firefox (navegador)</div>
+                    <div class="bullet-point">WordPress (sites)</div>
+                    <div class="bullet-point">VLC (vídeos)</div>
+                    <div class="bullet-point">Blender (3D)</div>
                 </div>
             </div>
         </div>
 
-        <div class="slide-card">
-            <h2 class="slide-subtitle">📝 Comandos Básicos (Arquivos)</h2>
-            <div class="grid-2">
-                <div class="content-box box-terminal">
-                    <p style="color:white;"># Cria pasta</p>
-                    $ mkdir NovaPasta <br><br>
-                    <p style="color:white;"># Cria arquivo vazio</p>
-                    $ touch arquivo.txt
-                </div>
-                <div class="content-box box-terminal">
-                    <p style="color:white;"># Copia arquivo</p>
-                    $ cp arquivo.txt backup.txt <br><br>
-                    <p style="color:white;"># Move ou Renomeia</p>
-                    $ mv arquivo.txt novo_nome.txt <br><br>
-                    <p style="color:white;"># Remove (Cuidado!)</p>
-                    $ rm arquivo.txt
-                </div>
-            </div>
-        </div>
-
-        <div class="slide-card">
-            <h2 class="slide-subtitle">📁 A Árvore de Diretórios</h2>
-            <p style="text-align: center; margin-bottom: 20px;">No Linux, não existe C:. Tudo começa na raiz <strong>/</strong>.</p>
-            <div class="grid-2">
-                <div class="content-box box-info">
-                    <h3>Principais Pastas</h3>
-                    <div class="bullet-point"><strong>/home</strong>: Seus arquivos pessoais</div>
-                    <div class="bullet-point"><strong>/root</strong>: Pasta do administrador</div>
-                    <div class="bullet-point"><strong>/bin</strong>: Onde ficam os programas</div>
-                    <div class="bullet-point"><strong>/etc</strong>: Arquivos de configuração</div>
-                </div>
-                <div class="content-box box-terminal" style="color: white; border: none;">
-                    / <br>
-                    ├── bin/ <br>
-                    ├── etc/ <br>
-                    ├── home/ <br>
-                    │   └── usuario/ <br>
-                    │       ├── Docs <br>
-                    │       └── Fotos <br>
-                    └── var/
-                </div>
-            </div>
-        </div>
-
-        <div class="slide-card">
-            <h2 class="slide-subtitle">🔐 Permissões (rwx)</h2>
-            <div class="content-box box-terminal" style="text-align: center; margin-bottom: 30px;">
-                -rwxr-xr-- 1 dono grupo arquivo.txt
-            </div>
-            <div class="grid-2">
-                <div class="content-box box-info">
-                    <h3>👥 Quem?</h3>
-                    <div class="bullet-point"><strong>User (u):</strong> O dono</div>
-                    <div class="bullet-point"><strong>Group (g):</strong> O grupo</div>
-                    <div class="bullet-point"><strong>Others (o):</strong> O resto do mundo</div>
-                </div>
-                <div class="content-box box-highlight">
-                    <h3>🔑 O quê?</h3>
-                    <div class="bullet-point"><strong>Read (r):</strong> Ler</div>
-                    <div class="bullet-point"><strong>Write (w):</strong> Escrever/Apagar</div>
-                    <div class="bullet-point"><strong>Execute (x):</strong> Executar programa</div>
-                </div>
-            </div>
-        </div>
-
+        <!-- SLIDE 24: Quiz Interativo -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
             <p style="text-align: center;">Arraste os conceitos da direita para as perguntas da esquerda!</p>
@@ -553,20 +941,24 @@
             <div class="drag-drop-container">
                 <div class="col-questions">
                     <div class="question-item">
-                        <div class="question-text">Quem criou o Kernel?</div>
+                        <div class="question-text">Quem criou o Kernel Linux?</div>
                         <div class="drop-zone" data-correct="linus">Arraste aqui</div>
                     </div>
                     <div class="question-item">
-                        <div class="question-text">Comando para listar arquivos?</div>
-                        <div class="drop-zone" data-correct="ls">Arraste aqui</div>
+                        <div class="question-text">Fundador do projeto GNU?</div>
+                        <div class="drop-zone" data-correct="stallman">Arraste aqui</div>
                     </div>
                     <div class="question-item">
-                        <div class="question-text">Pasta dos usuários?</div>
-                        <div class="drop-zone" data-correct="home">Arraste aqui</div>
+                        <div class="question-text">Distro ideal para iniciantes?</div>
+                        <div class="drop-zone" data-correct="ubuntu">Arraste aqui</div>
                     </div>
                     <div class="question-item">
-                        <div class="question-text">Vantagem principal?</div>
-                        <div class="drop-zone" data-correct="free">Arraste aqui</div>
+                        <div class="question-text">Sistema baseado em Linux no celular?</div>
+                        <div class="drop-zone" data-correct="android">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Ano de criação do Linux?</div>
+                        <div class="drop-zone" data-correct="1991">Arraste aqui</div>
                     </div>
                 </div>
 
@@ -582,12 +974,29 @@
             <div id="quizResult" class="quiz-result"></div>
         </div>
 
+        <!-- SLIDE 25: Conclusão -->
         <div class="slide-card">
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
-                <h2 class="slide-subtitle">🎓 Parabéns! Você completou a aula.</h2>
-                <div class="content-box box-success" style="max-width: 600px;">
-                    <h3>O que aprendemos hoje:</h3>
-                    <p>Você descobriu a história do Linux, entendeu o conceito de Software Livre, conheceu a estrutura de diretórios e aprendeu os primeiros comandos no terminal.</p>
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🐧</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Você completou a Aula 01!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos hoje:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">A história do UNIX e Linux</div>
+                            <div class="bullet-point">O que é Software Livre</div>
+                            <div class="bullet-point">Quem são Stallman e Torvalds</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">As principais distribuições</div>
+                            <div class="bullet-point">Diferenças entre Windows e Linux</div>
+                            <div class="bullet-point">Onde o Linux está presente</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p>Vamos colocar a mão na massa! Conheceremos o Terminal e os primeiros comandos do Linux.</p>
                 </div>
                 <div style="margin-top: 40px;">
                     <a href="dashboard.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">
@@ -636,12 +1045,13 @@
             if (e.key === 'ArrowRight') changeSlide(1);
         });
 
-        // === LÓGICA DO QUIZ (CORRIGIDA) ===
+        // === LÓGICA DO QUIZ ===
         const answersData = [
             { id: 'linus', text: 'Linus Torvalds' },
-            { id: 'ls', text: 'Comando ls' },
-            { id: 'home', text: '/home' },
-            { id: 'free', text: 'Gratuito / Open Source' }
+            { id: 'stallman', text: 'Richard Stallman' },
+            { id: 'ubuntu', text: 'Ubuntu / Mint' },
+            { id: 'android', text: 'Android' },
+            { id: '1991', text: '1991' }
         ];
 
         function shuffleArray(array) {
@@ -694,12 +1104,10 @@
                     e.preventDefault();
                     zone.classList.remove('drag-over');
                     
-                    // CORREÇÃO: Verifica se já tem uma resposta (elemento .answer-item)
-                    // ao invés de verificar hasChildNodes() que conta texto também
                     const jaTemResposta = zone.querySelector('.answer-item');
                     
                     if (draggedItem && !jaTemResposta) {
-                        zone.innerHTML = ''; // Limpa o texto "Arraste aqui"
+                        zone.innerHTML = '';
                         zone.appendChild(draggedItem);
                         draggedItem.classList.add('in-drop-zone');
                         zone.classList.add('has-answer');
@@ -713,23 +1121,25 @@
         function checkAnswers() {
             let correct = 0;
             const zones = document.querySelectorAll('.drop-zone');
+            const total = zones.length;
             
             zones.forEach(zone => {
                 const answer = zone.querySelector('.answer-item');
                 if (answer && answer.dataset.id === zone.dataset.correct) {
                     correct++;
-                    zone.style.background = '#d1fae5'; // Verde claro
+                    zone.style.background = '#d1fae5';
                 } else {
-                    zone.style.background = '#fee2e2'; // Vermelho claro
+                    zone.style.background = '#fee2e2';
                 }
             });
 
             const resultDiv = document.getElementById('quizResult');
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `<h3>Você acertou ${correct} de 4!</h3>`;
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${total}!</h3>`;
             
-            if(correct === 4) resultDiv.innerHTML += '<p>🎉 Perfeito! Você é um mestre Linux!</p>';
-            else resultDiv.innerHTML += '<p>Continue tentando!</p>';
+            if(correct === total) resultDiv.innerHTML += '<p>🎉 Perfeito! Você é um mestre Linux!</p>';
+            else if(correct >= total/2) resultDiv.innerHTML += '<p>👍 Bom trabalho! Revise os que errou.</p>';
+            else resultDiv.innerHTML += '<p>📚 Continue estudando! Você consegue!</p>';
         }
 
         function resetQuiz() {
