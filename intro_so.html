@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -222,7 +223,9 @@
             cursor: grab;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             font-size: 0.95em;
+            user-select: none;
         }
+        .answer-item:active { cursor: grabbing; }
         .answer-item.dragging { opacity: 0.5; }
         .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
 
@@ -568,7 +571,7 @@
                 </div>
 
                 <div class="col-answers" id="answersPool">
-                    </div>
+                </div>
             </div>
 
             <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
@@ -633,7 +636,7 @@
             if (e.key === 'ArrowRight') changeSlide(1);
         });
 
-        // === LÓGICA DO QUIZ ===
+        // === LÓGICA DO QUIZ (CORRIGIDA) ===
         const answersData = [
             { id: 'linus', text: 'Linus Torvalds' },
             { id: 'ls', text: 'Comando ls' },
@@ -684,20 +687,22 @@
                     e.preventDefault();
                     zone.classList.add('drag-over');
                 });
+                
                 zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                
                 zone.addEventListener('drop', (e) => {
                     e.preventDefault();
                     zone.classList.remove('drag-over');
-                    if (draggedItem && !zone.hasChildNodes()) {
-                        // Limpa o texto "Arraste aqui" se necessário
-                        if(zone.innerText === 'Arraste aqui') zone.innerHTML = '';
-                        
-                        // Se já tiver item, devolve pro pool (simplificado: apenas substitui se vazio)
-                        if(zone.children.length === 0) {
-                            zone.appendChild(draggedItem);
-                            draggedItem.classList.add('in-drop-zone');
-                            zone.classList.add('has-answer');
-                        }
+                    
+                    // CORREÇÃO: Verifica se já tem uma resposta (elemento .answer-item)
+                    // ao invés de verificar hasChildNodes() que conta texto também
+                    const jaTemResposta = zone.querySelector('.answer-item');
+                    
+                    if (draggedItem && !jaTemResposta) {
+                        zone.innerHTML = ''; // Limpa o texto "Arraste aqui"
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
                     }
                 });
             });
@@ -737,5 +742,3 @@
     </script>
 </body>
 </html>
-
-```
