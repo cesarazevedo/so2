@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -194,23 +195,32 @@
             gap: 5px;
             font-family: 'Courier New', monospace;
             font-size: 1.5em;
-            margin: 30px 0;
+            margin: 30px 0 10px 0;
             flex-wrap: wrap;
         }
         .prompt-part {
             padding: 10px 15px;
             border-radius: 8px;
-            position: relative;
+            text-align: center;
         }
-        .prompt-part .label {
-            position: absolute;
-            bottom: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.5em;
+        .prompt-labels {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .prompt-label-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
             color: var(--text-light);
-            white-space: nowrap;
-            font-family: 'Segoe UI', sans-serif;
+        }
+        .prompt-label-item .color-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 4px;
         }
 
         /* Árvore de diretórios */
@@ -488,21 +498,36 @@
             <div class="prompt-breakdown">
                 <div class="prompt-part" style="background: #d1fae5; color: #065f46;">
                     usuario
-                    <span class="label">👤 Seu nome de usuário</span>
                 </div>
                 <div class="prompt-part" style="background: transparent; color: var(--text-dark);">@</div>
                 <div class="prompt-part" style="background: #dbeafe; color: #1e40af;">
                     linux
-                    <span class="label">💻 Nome da máquina</span>
                 </div>
                 <div class="prompt-part" style="background: transparent; color: var(--text-dark);">:</div>
                 <div class="prompt-part" style="background: #fef3c7; color: #92400e;">
                     ~
-                    <span class="label">📁 Pasta atual (home)</span>
                 </div>
                 <div class="prompt-part" style="background: #fee2e2; color: #991b1b;">
                     $
-                    <span class="label">⚡ Usuário normal</span>
+                </div>
+            </div>
+
+            <div class="prompt-labels">
+                <div class="prompt-label-item">
+                    <div class="color-dot" style="background: #d1fae5;"></div>
+                    <span>👤 Seu nome de usuário</span>
+                </div>
+                <div class="prompt-label-item">
+                    <div class="color-dot" style="background: #dbeafe;"></div>
+                    <span>💻 Nome da máquina</span>
+                </div>
+                <div class="prompt-label-item">
+                    <div class="color-dot" style="background: #fef3c7;"></div>
+                    <span>📁 Pasta atual (home)</span>
+                </div>
+                <div class="prompt-label-item">
+                    <div class="color-dot" style="background: #fee2e2;"></div>
+                    <span>⚡ Usuário normal</span>
                 </div>
             </div>
 
@@ -1094,7 +1119,7 @@
                     <p>Vamos aprender sobre <strong>Permissões</strong>! Quem pode ler, escrever e executar arquivos no Linux.</p>
                 </div>
                 <div style="margin-top: 40px;">
-                    <a href="dashboard.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">
                         Voltar para o Dashboard 🏠
                     </a>
                 </div>
