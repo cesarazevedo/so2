@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 02 - O Terminal Linux</title>
+    <style>
+        /* --- VARIÁVEIS GLOBAIS (Mesmas do Dashboard) --- */
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+
+        /* --- RESET E BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- HEADER DA SALA DE AULA --- */
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        /* --- CONTAINER PRINCIPAL (VIEWER) --- */
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ESTILOS DO CONTEÚDO --- */
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.5em; }
+
+        /* Boxes de Conteúdo */
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-history { border-color: #8e44ad; background: #fdf2f8; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+
+        /* Layouts de Colunas */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; }
+
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        /* Cards de Comando */
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.8em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 10px; }
+        .command-card p { font-size: 0.9em; color: var(--text-light); }
+
+        /* Prompt explicado */
+        .prompt-breakdown {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.5em;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .prompt-part {
+            padding: 10px 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .prompt-part .label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.5em;
+            color: var(--text-light);
+            white-space: nowrap;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* Árvore de diretórios */
+        .tree-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+        .tree-container .folder { color: #63b3ed; }
+        .tree-container .file { color: #a0aec0; }
+        .tree-container .highlight { color: #38ef7d; font-weight: bold; }
+
+        /* Atalhos de teclado */
+        .keyboard-key {
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 8px 15px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            box-shadow: 0 2px 0 #dee2e6;
+            display: inline-block;
+            margin: 0 3px;
+        }
+
+        /* Comparativo visual */
+        .path-example {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            border-left: 4px solid var(--primary);
+        }
+        .path-example code {
+            background: #1a202c;
+            color: #38ef7d;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* --- CONTROLES DE NAVEGAÇÃO --- */
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+
+        /* --- DRAG AND DROP QUIZ --- */
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .question-text { font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            user-select: none;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+
+        .quiz-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .prompt-breakdown { font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn">
+                <span>←</span> Voltar
+            </a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 02</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">25</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">⌨️</div>
+                <h1 class="slide-title">O Terminal Linux</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Seus Primeiros Passos na Linha de Comando</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Domine o poder do terminal!</p>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Hoje você vai aprender a "conversar" diretamente com o Linux!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que é o Terminal -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 O que é o Terminal?</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>💻 Definição Simples</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">O terminal é uma <strong>janela de texto</strong> onde você digita comandos para o computador executar.</p>
+                    <p style="margin-top: 15px;">Em vez de clicar em ícones, você <strong>escreve</strong> o que quer fazer!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🎯 Analogia</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Imagine a diferença entre:</p>
+                    <div class="bullet-point">🖱️ <strong>Interface gráfica:</strong> Apontar para o que você quer</div>
+                    <div class="bullet-point">⌨️ <strong>Terminal:</strong> Dizer exatamente o que você quer</div>
+                    <p style="margin-top: 15px;">É como a diferença entre apontar para um prato no cardápio ou falar o pedido completo!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Por que usar o Terminal -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🚀 Por que usar o Terminal?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">"Se a interface gráfica funciona, por que aprender terminal?"</p>
+            </div>
+            <div class="grid-3">
+                <div class="content-box box-success">
+                    <h3>⚡ Velocidade</h3>
+                    <p>Um comando faz em segundos o que levaria vários cliques. Renomear 100 arquivos? Um comando!</p>
+                </div>
+                <div class="content-box box-info">
+                    <h3>🔧 Poder</h3>
+                    <p>Algumas coisas SÓ podem ser feitas pelo terminal. Controle total do sistema!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🌐 Acesso Remoto</h3>
+                    <p>Servidores não têm tela. Você acessa de longe, só pelo terminal (SSH).</p>
+                </div>
+            </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                💼 <strong>No mercado de trabalho:</strong> Todo profissional de TI precisa saber usar o terminal!
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Shell vs Terminal -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🐚 Shell vs Terminal: Qual a diferença?</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🖥️ Terminal (Emulador)</h3>
+                    <p style="line-height: 1.8;">É a <strong>janela</strong> que você abre.</p>
+                    <p>Exemplos: GNOME Terminal, Konsole, xterm</p>
+                    <p style="margin-top: 15px; font-style: italic;">Analogia: É o <strong>telefone</strong> 📱</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🐚 Shell (Interpretador)</h3>
+                    <p style="line-height: 1.8;">É o <strong>programa</strong> que entende seus comandos.</p>
+                    <p>Exemplos: Bash, Zsh, Fish</p>
+                    <p style="margin-top: 15px; font-style: italic;">Analogia: É o <strong>idioma</strong> que você fala 🗣️</p>
+                </div>
+            </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                💡 O shell mais comum é o <strong>Bash</strong> (Bourne Again Shell). É o padrão da maioria das distros!
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Como abrir o Terminal -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔓 Como Abrir o Terminal</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>⌨️ Atalho Universal</h3>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">Alt</span> + <span class="keyboard-key">T</span>
+                    </div>
+                    <p style="text-align: center;">Funciona na maioria das distros!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🖱️ Pelo Menu</h3>
+                    <div class="bullet-point">Ubuntu: Pesquisar "Terminal"</div>
+                    <div class="bullet-point">Mint: Menu → Sistema → Terminal</div>
+                    <div class="bullet-point">Clique direito na área de trabalho</div>
+                </div>
+            </div>
+            <div class="content-box box-terminal" style="text-align: center; margin-top: 20px;">
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">█</span>
+            </div>
+            <p style="text-align: center; margin-top: 15px; color: var(--text-light);">
+                Quando você vê isso, o terminal está pronto para receber comandos!
+            </p>
+        </div>
+
+        <!-- SLIDE 6: Anatomia do Prompt -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔍 Entendendo o Prompt</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Cada parte do prompt tem um significado!</p>
+            
+            <div class="prompt-breakdown">
+                <div class="prompt-part" style="background: #d1fae5; color: #065f46;">
+                    usuario
+                    <span class="label">👤 Seu nome de usuário</span>
+                </div>
+                <div class="prompt-part" style="background: transparent; color: var(--text-dark);">@</div>
+                <div class="prompt-part" style="background: #dbeafe; color: #1e40af;">
+                    linux
+                    <span class="label">💻 Nome da máquina</span>
+                </div>
+                <div class="prompt-part" style="background: transparent; color: var(--text-dark);">:</div>
+                <div class="prompt-part" style="background: #fef3c7; color: #92400e;">
+                    ~
+                    <span class="label">📁 Pasta atual (home)</span>
+                </div>
+                <div class="prompt-part" style="background: #fee2e2; color: #991b1b;">
+                    $
+                    <span class="label">⚡ Usuário normal</span>
+                </div>
+            </div>
+
+            <div class="grid-2" style="margin-top: 40px;">
+                <div class="content-box box-info">
+                    <h3>💡 O til (~)</h3>
+                    <p>O símbolo <code>~</code> representa sua pasta pessoal (home). É um atalho para <code>/home/usuario</code></p>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>⚠️ $ vs #</h3>
+                    <p><strong>$</strong> = Usuário comum<br><strong>#</strong> = Root (administrador) — Cuidado!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Primeiro Comando -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎉 Seu Primeiro Comando!</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 30px;">
+                <p style="font-size: 1.3em;">Vamos começar com algo simples: descobrir <strong>onde você está</strong>!</p>
+            </div>
+            
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: pwd (Print Working Directory)</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">pwd</span><br>
+                <span class="output">/home/usuario</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>📍 O que faz?</h3>
+                    <p>Mostra o caminho completo da pasta onde você está agora. "pwd" vem de <strong>P</strong>rint <strong>W</strong>orking <strong>D</strong>irectory.</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🎯 Analogia</h3>
+                    <p>É como perguntar ao GPS: <strong>"Onde eu estou?"</strong>. Ele responde com o endereço completo!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Comando ls -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📂 Listando Arquivos: ls</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: ls (List)</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">ls</span><br>
+                <span class="output">Documentos  Downloads  Imagens  Música  Vídeos</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>📋 O que faz?</h3>
+                    <p>Lista todos os arquivos e pastas que estão no diretório atual. É o comando mais usado!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 Analogia</h3>
+                    <p>É como <strong>acender a luz</strong> de um quarto escuro para ver o que tem dentro!</p>
+                </div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>🔧 Variações úteis:</h3>
+                <div class="grid-2">
+                    <div><code>ls -l</code> → Lista detalhada (tamanho, data, permissões)</div>
+                    <div><code>ls -a</code> → Mostra arquivos ocultos (começam com .)</div>
+                    <div><code>ls -la</code> → Combina os dois!</div>
+                    <div><code>ls -lh</code> → Tamanhos legíveis (KB, MB, GB)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: Comando ls detalhado -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔎 ls -la: A Visão Completa</h2>
+            <div class="content-box box-terminal">
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">ls -la</span><br>
+                <span class="output">total 32</span><br>
+                <span class="output">drwxr-xr-x  5 usuario usuario 4096 jan 15 10:30 <span style="color: #63b3ed;">.</span></span><br>
+                <span class="output">drwxr-xr-x  3 root    root    4096 jan 10 08:00 <span style="color: #63b3ed;">..</span></span><br>
+                <span class="output">-rw-r--r--  1 usuario usuario  220 jan 10 08:00 .bashrc</span><br>
+                <span class="output">drwxr-xr-x  2 usuario usuario 4096 jan 12 14:20 <span style="color: #63b3ed;">Documentos</span></span><br>
+                <span class="output">-rw-r--r--  1 usuario usuario 1024 jan 15 10:30 notas.txt</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>📁 Arquivos Ocultos</h3>
+                    <p>Começam com ponto (.). Exemplo: <code>.bashrc</code></p>
+                    <p>São arquivos de configuração do sistema.</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>📌 Diretórios Especiais</h3>
+                    <p><code>.</code> → Pasta atual</p>
+                    <p><code>..</code> → Pasta anterior (pai)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Comando cd -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🚶 Navegando: cd</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: cd (Change Directory)</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">cd Documentos</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~/Documentos</span>$ <span class="command">█</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>🚪 O que faz?</h3>
+                    <p>Muda para outra pasta. Você "entra" no diretório especificado. Repare que o prompt mudou!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 Analogia</h3>
+                    <p>É como <strong>caminhar</strong> de um cômodo para outro dentro de uma casa. Você muda de lugar!</p>
+                </div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>🎯 Atalhos essenciais:</h3>
+                <div class="grid-2">
+                    <div><code>cd ~</code> ou <code>cd</code> → Volta para sua home</div>
+                    <div><code>cd ..</code> → Volta uma pasta (pai)</div>
+                    <div><code>cd /</code> → Vai para a raiz do sistema</div>
+                    <div><code>cd -</code> → Volta para a pasta anterior</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Navegação na prática -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🗺️ Navegação na Prática</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Estou na home, quero ir para Documentos</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">cd Documentos</span><br><br>
+                
+                <span class="comment"># Agora quero ver o que tem aqui</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~/Documentos</span>$ <span class="command">ls</span><br>
+                <span class="output">trabalho.pdf  projeto  fotos</span><br><br>
+                
+                <span class="comment"># Entrar na pasta projeto</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~/Documentos</span>$ <span class="command">cd projeto</span><br><br>
+                
+                <span class="comment"># Onde estou agora?</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~/Documentos/projeto</span>$ <span class="command">pwd</span><br>
+                <span class="output">/home/usuario/Documentos/projeto</span><br><br>
+                
+                <span class="comment"># Voltar para home de uma vez</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~/Documentos/projeto</span>$ <span class="command">cd ~</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: A Árvore de Diretórios -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🌳 A Árvore de Diretórios</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">No Linux, <strong>não existe C:</strong> — Tudo começa na raiz <code>/</code></p>
+            </div>
+            
+            <div class="grid-2">
+                <div class="tree-container">
+                    <span class="highlight">/</span> (raiz)<br>
+                    ├── <span class="folder">bin/</span> &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #718096;">← Programas</span><br>
+                    ├── <span class="folder">etc/</span> &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #718096;">← Configurações</span><br>
+                    ├── <span class="folder">home/</span> &nbsp;&nbsp;&nbsp;<span style="color: #718096;">← Usuários</span><br>
+                    │&nbsp;&nbsp; └── <span class="folder">usuario/</span><br>
+                    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── <span class="folder">Documentos/</span><br>
+                    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── <span class="folder">Downloads/</span><br>
+                    │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; └── <span class="file">notas.txt</span><br>
+                    ├── <span class="folder">tmp/</span> &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #718096;">← Temporários</span><br>
+                    └── <span class="folder">var/</span> &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #718096;">← Dados variáveis</span>
+                </div>
+                <div class="content-box box-info">
+                    <h3>🏢 Analogia do Prédio</h3>
+                    <p style="line-height: 1.8;">Imagine um prédio:</p>
+                    <div class="bullet-point"><code>/</code> é o <strong>térreo</strong></div>
+                    <div class="bullet-point">Cada pasta é um <strong>andar</strong></div>
+                    <div class="bullet-point">Subpastas são <strong>apartamentos</strong></div>
+                    <div class="bullet-point">Arquivos são <strong>móveis</strong></div>
+                    <p style="margin-top: 15px;">O caminho <code>/home/usuario</code> é como dizer: "Prédio, andar Home, apartamento Usuario"</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Principais Diretórios -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📁 Principais Diretórios do Linux</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>/home</h3>
+                    <p>Sua pasta pessoal. Seus documentos, downloads, configurações pessoais ficam aqui.</p>
+                    <p style="margin-top: 10px;"><code>/home/joao</code>, <code>/home/maria</code>...</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>/etc</h3>
+                    <p>Arquivos de configuração do sistema. Senhas, configurações de rede, serviços...</p>
+                    <p style="margin-top: 10px;">📝 "etc" = "et cetera" (e outras coisas)</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>/bin e /usr/bin</h3>
+                    <p>Onde ficam os programas (binários). Os comandos que você digita estão aqui!</p>
+                    <p style="margin-top: 10px;"><code>ls</code>, <code>cd</code>, <code>cp</code>...</p>
+                </div>
+                <div class="content-box box-history">
+                    <h3>/tmp</h3>
+                    <p>Arquivos temporários. É limpa automaticamente. Ideal para testes rápidos.</p>
+                    <p style="margin-top: 10px;">⚠️ Não guarde nada importante aqui!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 14: Caminhos Absolutos vs Relativos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🛤️ Caminhos: Absoluto vs Relativo</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📍 Caminho Absoluto</h3>
+                    <p>Começa da raiz <code>/</code>. É o endereço <strong>completo</strong>.</p>
+                    <div class="path-example">
+                        <code>/home/usuario/Documentos/trabalho.pdf</code>
+                    </div>
+                    <p style="margin-top: 15px;"><strong>Analogia:</strong> Endereço completo com CEP, cidade, rua e número.</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>📍 Caminho Relativo</h3>
+                    <p>Começa de onde você <strong>está agora</strong>.</p>
+                    <div class="path-example">
+                        <code>Documentos/trabalho.pdf</code>
+                    </div>
+                    <p style="margin-top: 15px;"><strong>Analogia:</strong> "A padaria fica duas quadras à direita" (depende de onde você está).</p>
+                </div>
+            </div>
+            <div class="content-box box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Mesmo resultado, formas diferentes:</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">cd /home/usuario/Documentos</span> &nbsp;&nbsp;<span class="comment"># Absoluto</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">cd Documentos</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Relativo</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 15: Criando Pastas -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📁 Criando Pastas: mkdir</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: mkdir (Make Directory)</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">mkdir MinhaPasta</span><br><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">ls</span><br>
+                <span class="output">Documentos  Downloads  <span style="color: #38ef7d;">MinhaPasta</span>  Música  Vídeos</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>📦 O que faz?</h3>
+                    <p>Cria uma nova pasta (diretório) vazia com o nome que você escolher.</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 Analogia</h3>
+                    <p>É como criar uma <strong>nova gaveta</strong> vazia no seu armário para organizar coisas.</p>
+                </div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>🔧 Dica útil:</h3>
+                <p><code>mkdir -p pasta1/pasta2/pasta3</code> → Cria várias pastas aninhadas de uma vez!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 16: Criando Arquivos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📄 Criando Arquivos: touch</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: touch (criar arquivo vazio)</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">touch notas.txt</span><br><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">ls</span><br>
+                <span class="output">Documentos  Downloads  MinhaPasta  Música  <span style="color: #38ef7d;">notas.txt</span>  Vídeos</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>📝 O que faz?</h3>
+                    <p>Cria um arquivo vazio. Se o arquivo já existe, apenas atualiza a data de modificação.</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 Analogia</h3>
+                    <p>É como colocar uma <strong>folha em branco</strong> na mesa, pronta para escrever.</p>
+                </div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>🔧 Criando vários de uma vez:</h3>
+                <p><code>touch arquivo1.txt arquivo2.txt arquivo3.txt</code></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 17: Copiando -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Copiando: cp</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: cp (Copy)</span><br>
+                <span class="comment"># cp origem destino</span><br><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">cp notas.txt backup_notas.txt</span><br><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">ls</span><br>
+                <span class="output"><span style="color: #38ef7d;">backup_notas.txt</span>  notas.txt  Documentos  Downloads</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>📑 O que faz?</h3>
+                    <p>Faz uma cópia de um arquivo. O original permanece intacto!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 Analogia</h3>
+                    <p>É como tirar uma <strong>xerox</strong>. Você fica com duas cópias!</p>
+                </div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>🔧 Copiando pasta inteira:</h3>
+                <p><code>cp -r MinhaPasta MinhaCopiaDaPasta</code> → O <code>-r</code> copia recursivamente (tudo dentro)</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 18: Movendo e Renomeando -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🚚 Movendo e Renomeando: mv</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: mv (Move)</span><br><br>
+                <span class="comment"># Movendo arquivo para outra pasta:</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">mv notas.txt Documentos/</span><br><br>
+                <span class="comment"># Renomeando arquivo:</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">mv arquivo_velho.txt arquivo_novo.txt</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>📦 O que faz?</h3>
+                    <p>Move arquivos de lugar <strong>OU</strong> renomeia. Depende de como você usa!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 Analogia</h3>
+                    <p><strong>Mover:</strong> Levar o sofá da sala para o quarto.<br>
+                    <strong>Renomear:</strong> Trocar a placa da porta.</p>
+                </div>
+            </div>
+
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚠️ Atenção!</h3>
+                <p>Se já existir um arquivo com o mesmo nome no destino, ele será <strong>sobrescrito</strong> sem aviso!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 19: Removendo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🗑️ Removendo: rm</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Comando: rm (Remove)</span><br><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">rm arquivo_inutil.txt</span><br><br>
+                <span class="comment"># Removendo pasta vazia:</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">rmdir PastaVazia</span><br><br>
+                <span class="comment"># Removendo pasta COM conteúdo:</span><br>
+                <span class="prompt">usuario@linux</span>:<span style="color: #63b3ed;">~</span>$ <span class="command">rm -r PastaComCoisas</span>
+            </div>
+
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>🚨 MUITO CUIDADO!</h3>
+                <div class="grid-2">
+                    <div>
+                        <p><strong>No Linux não existe lixeira pelo terminal!</strong></p>
+                        <p>Quando você remove, o arquivo <strong>some de verdade</strong>.</p>
+                    </div>
+                    <div>
+                        <p style="color: #dc2626; font-weight: bold;">NUNCA execute:</p>
+                        <p><code>rm -rf /</code></p>
+                        <p>Isso apaga TODO o sistema!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>💡 Dica de segurança:</h3>
+                <p>Use <code>rm -i arquivo.txt</code> → O <code>-i</code> pede confirmação antes de apagar!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 20: Resumo dos Comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos de Arquivo</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">mkdir</div>
+                    <h4>Criar Pasta</h4>
+                    <p>mkdir NovaPasta</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">touch</div>
+                    <h4>Criar Arquivo</h4>
+                    <p>touch arquivo.txt</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">cp</div>
+                    <h4>Copiar</h4>
+                    <p>cp origem destino</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">mv</div>
+                    <h4>Mover/Renomear</h4>
+                    <p>mv antigo novo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">rm</div>
+                    <h4>Remover</h4>
+                    <p>rm arquivo.txt</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">rmdir</div>
+                    <h4>Remover Pasta Vazia</h4>
+                    <p>rmdir PastaVazia</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 21: Dicas e Atalhos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚡ Dicas e Atalhos Essenciais</h2>
+            <div class="grid-2">
+                <div class="content-box box-success">
+                    <h3>🔮 Tab: Autocompletar</h3>
+                    <p>Digite as primeiras letras e pressione <span class="keyboard-key">Tab</span></p>
+                    <p style="margin-top: 10px;">O terminal completa o resto! Economiza tempo e evita erros de digitação.</p>
+                    <div class="content-box box-terminal" style="margin-top: 15px; padding: 10px;">
+                        <span class="command">cd Doc</span><span class="keyboard-key" style="font-size: 0.8em;">Tab</span> → <span class="command">cd Documentos/</span>
+                    </div>
+                </div>
+                <div class="content-box box-info">
+                    <h3>⬆️⬇️ Histórico</h3>
+                    <p>Use as setas <span class="keyboard-key">↑</span> <span class="keyboard-key">↓</span> para navegar pelos comandos anteriores.</p>
+                    <p style="margin-top: 10px;">Não precisa digitar tudo de novo!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🧹 Limpar Tela</h3>
+                    <p>Digite <code>clear</code> ou pressione:</p>
+                    <div style="margin-top: 10px;">
+                        <span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">L</span>
+                    </div>
+                </div>
+                <div class="content-box box-history">
+                    <h3>❌ Cancelar Comando</h3>
+                    <p>Algo deu errado? Pressione:</p>
+                    <div style="margin-top: 10px;">
+                        <span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">C</span>
+                    </div>
+                    <p style="margin-top: 10px;">Para o que estiver executando!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 22: Pedindo Ajuda -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🆘 Pedindo Ajuda ao Sistema</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Esqueceu como usar um comando? O Linux te ajuda!</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📖 man (Manual)</h3>
+                    <p>Mostra o manual completo do comando.</p>
+                    <div class="content-box box-terminal" style="padding: 10px; margin-top: 10px;">
+                        <span class="command">man ls</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Use <span class="keyboard-key">Q</span> para sair do manual.</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>❓ --help</h3>
+                    <p>Mostra um resumo rápido das opções.</p>
+                    <div class="content-box box-terminal" style="padding: 10px; margin-top: 10px;">
+                        <span class="command">ls --help</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Mais curto que o man, direto ao ponto!</p>
+                </div>
+            </div>
+
+            <div class="content-box box-highlight" style="margin-top: 20px;">
+                <h3>💡 Analogia</h3>
+                <p><strong>man</strong> = Ler o manual completo do carro.<br>
+                <strong>--help</strong> = Olhar a "colinha" rápida no painel.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 23: Visualizando Arquivos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👀 Visualizando Conteúdo de Arquivos</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📄 cat</h3>
+                    <p>Mostra todo o conteúdo de uma vez.</p>
+                    <div class="content-box box-terminal" style="padding: 10px; margin-top: 10px;">
+                        <span class="command">cat notas.txt</span><br>
+                        <span class="output">Esta é a primeira linha</span><br>
+                        <span class="output">Esta é a segunda linha</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Bom para arquivos pequenos.</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>📜 less</h3>
+                    <p>Mostra página por página (para arquivos grandes).</p>
+                    <div class="content-box box-terminal" style="padding: 10px; margin-top: 10px;">
+                        <span class="command">less arquivo_grande.txt</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Use setas para navegar, <span class="keyboard-key">Q</span> para sair.</p>
+                </div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>🔧 Outros úteis:</h3>
+                <div class="grid-2">
+                    <div><code>head arquivo.txt</code> → Mostra as 10 primeiras linhas</div>
+                    <div><code>tail arquivo.txt</code> → Mostra as 10 últimas linhas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 24: Quiz Interativo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center;">Arraste os comandos para suas funções corretas!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Mostrar onde estou</div>
+                        <div class="drop-zone" data-correct="pwd">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Listar arquivos</div>
+                        <div class="drop-zone" data-correct="ls">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Mudar de pasta</div>
+                        <div class="drop-zone" data-correct="cd">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Criar pasta</div>
+                        <div class="drop-zone" data-correct="mkdir">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Remover arquivo</div>
+                        <div class="drop-zone" data-correct="rm">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Copiar arquivo</div>
+                        <div class="drop-zone" data-correct="cp">Arraste aqui</div>
+                    </div>
+                </div>
+
+                <div class="col-answers" id="answersPool">
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 25: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓⌨️</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Você completou a Aula 02!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos hoje:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">O que é terminal e shell</div>
+                            <div class="bullet-point">Anatomia do prompt</div>
+                            <div class="bullet-point">Navegação: pwd, ls, cd</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">Árvore de diretórios</div>
+                            <div class="bullet-point">Manipulação de arquivos</div>
+                            <div class="bullet-point">Atalhos e dicas</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p>Vamos aprender sobre <strong>Permissões</strong>! Quem pode ler, escrever e executar arquivos no Linux.</p>
+                </div>
+                <div style="margin-top: 40px;">
+                    <a href="dashboard.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">
+                        Voltar para o Dashboard 🏠
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        // === LÓGICA DE NAVEGAÇÃO ===
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // === LÓGICA DO QUIZ ===
+        const answersData = [
+            { id: 'pwd', text: 'pwd' },
+            { id: 'ls', text: 'ls' },
+            { id: 'cd', text: 'cd' },
+            { id: 'mkdir', text: 'mkdir' },
+            { id: 'rm', text: 'rm' },
+            { id: 'cp', text: 'cp' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            const shuffled = shuffleArray([...answersData]);
+            
+            shuffled.forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                
+                div.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                });
+                div.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                });
+                
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    
+                    const jaTemResposta = zone.querySelector('.answer-item');
+                    
+                    if (draggedItem && !jaTemResposta) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            const total = zones.length;
+            
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${total}!</h3>`;
+            
+            if(correct === total) resultDiv.innerHTML += '<p>🎉 Perfeito! Você dominou os comandos básicos!</p>';
+            else if(correct >= total/2) resultDiv.innerHTML += '<p>👍 Bom trabalho! Revise os que errou.</p>';
+            else resultDiv.innerHTML += '<p>📚 Continue praticando! Use o terminal para fixar!</p>';
+        }
+
+        function resetQuiz() {
+            initQuiz();
+        }
+
+        // Inicia tudo
+        initQuiz();
+
+    </script>
+</body>
+</html>
