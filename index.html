@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -35,13 +36,21 @@
         .brand {
             font-size: 1.5em;
             font-weight: 700;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             display: flex;
             align-items: center;
             gap: 10px;
         }
+        /* CORREÇÃO: Separar emojis do texto com gradiente */
+        .brand-icons {
+            /* Emojis mantêm cor original */
+        }
+        .brand-text {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
         .search-box {
             position: relative;
             width: 400px;
@@ -242,7 +251,9 @@
 
     <header class="top-header">
         <div class="brand">
-            <span>🐧🪟</span> SOR Dashboard
+            <!-- CORREÇÃO: Emojis separados do texto com gradiente -->
+            <span class="brand-icons">🐧🪟</span>
+            <span class="brand-text">SOR Dashboard</span>
         </div>
         <div class="search-box">
             <span class="search-icon">🔍</span>
@@ -518,13 +529,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
