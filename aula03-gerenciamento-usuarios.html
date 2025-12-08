@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 03 - Gerenciamento de Usuários</title>
+    <style>
+        /* --- VARIÁVEIS GLOBAIS --- */
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+
+        /* --- RESET E BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- HEADER DA SALA DE AULA --- */
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        /* --- CONTAINER PRINCIPAL --- */
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ESTILOS DO CONTEÚDO --- */
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.5em; }
+
+        /* Boxes de Conteúdo */
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-history { border-color: #8e44ad; background: #fdf2f8; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .root-prompt { color: #fc8181; }
+
+        /* Layouts de Colunas */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; }
+
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        /* Cards de Comando */
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.5em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 10px; }
+        .command-card p { font-size: 0.9em; color: var(--text-light); }
+
+        /* Usuários visuais */
+        .user-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            margin: 0 auto 15px;
+        }
+        .user-root { background: linear-gradient(135deg, #fc8181, #e53e3e); }
+        .user-normal { background: linear-gradient(135deg, #68d391, #38a169); }
+        .user-system { background: linear-gradient(135deg, #63b3ed, #3182ce); }
+
+        /* Diagrama de hierarquia */
+        .hierarchy-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 30px;
+        }
+        .hierarchy-level {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .hierarchy-box {
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .hierarchy-line {
+            width: 2px;
+            height: 30px;
+            background: #cbd5e0;
+        }
+
+        /* Arquivo passwd visual */
+        .passwd-line {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .passwd-line span {
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin: 2px;
+        }
+        .field-user { background: #38a169; color: white; }
+        .field-pass { background: #718096; color: white; }
+        .field-uid { background: #3182ce; color: white; }
+        .field-gid { background: #805ad5; color: white; }
+        .field-info { background: #d69e2e; color: white; }
+        .field-home { background: #e53e3e; color: white; }
+        .field-shell { background: #38b2ac; color: white; }
+
+        /* Teclas de teclado */
+        .keyboard-key {
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 8px 15px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            box-shadow: 0 2px 0 #dee2e6;
+            display: inline-block;
+            margin: 0 3px;
+        }
+
+        /* Comparativo sudo */
+        .sudo-comparison {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .sudo-box {
+            padding: 20px 30px;
+            border-radius: 15px;
+            text-align: center;
+            flex: 1;
+            max-width: 300px;
+        }
+        .sudo-arrow {
+            font-size: 2em;
+            color: var(--primary);
+        }
+
+        /* --- CONTROLES DE NAVEGAÇÃO --- */
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+
+        /* --- DRAG AND DROP QUIZ --- */
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .question-text { font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            user-select: none;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+
+        .quiz-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .sudo-comparison { flex-direction: column; }
+            .sudo-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn">
+                <span>←</span> Voltar
+            </a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 03</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">25</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">👥</div>
+                <h1 class="slide-title">Gerenciamento de Usuários</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Crie, Modifique e Organize Contas no Linux</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Controle quem acessa seu sistema!</p>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Aprenda a administrar usuários como um verdadeiro SysAdmin!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: Por que gerenciar usuários? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 Por que Gerenciar Usuários?</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🏢 Em um Servidor</h3>
+                    <div class="bullet-point">Vários funcionários acessam</div>
+                    <div class="bullet-point">Cada um precisa de sua conta</div>
+                    <div class="bullet-point">Dados separados e privados</div>
+                    <div class="bullet-point">Controle de quem faz o quê</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🎯 Analogia: Empresa</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Imagine uma empresa:</p>
+                    <p>Cada funcionário tem seu <strong>crachá</strong> (login), sua <strong>mesa</strong> (pasta home) e acesso apenas às <strong>salas autorizadas</strong> (permissões).</p>
+                    <p style="margin-top: 10px;">O gerenciamento de usuários funciona igual!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Tipos de Usuários -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👤 Tipos de Usuários no Linux</h2>
+            <div class="grid-3">
+                <div class="content-box box-warning" style="text-align: center;">
+                    <div class="user-icon user-root">👑</div>
+                    <h3 style="color: #e53e3e;">Root (UID 0)</h3>
+                    <p>O <strong>superusuário</strong>. Pode TUDO no sistema. É como o dono do prédio com chave mestra.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">⚠️ Use com cuidado!</p>
+                </div>
+                <div class="content-box box-success" style="text-align: center;">
+                    <div class="user-icon user-normal">👨‍💻</div>
+                    <h3 style="color: #38a169;">Usuários Comuns</h3>
+                    <p>Pessoas reais que usam o sistema. Cada um tem sua pasta home e permissões limitadas.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">UID: 1000+</p>
+                </div>
+                <div class="content-box box-info" style="text-align: center;">
+                    <div class="user-icon user-system">⚙️</div>
+                    <h3 style="color: #3182ce;">Usuários de Sistema</h3>
+                    <p>Contas para serviços (apache, mysql, etc). Não são pessoas, são programas!</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">UID: 1-999</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: UID e GID -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔢 UID e GID: A Identidade Digital</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Todo usuário tem um <strong>número de identificação</strong> único!</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🆔 UID (User ID)</h3>
+                    <p>Número único que identifica o usuário.</p>
+                    <div class="bullet-point"><strong>0</strong> = root (sempre)</div>
+                    <div class="bullet-point"><strong>1-999</strong> = usuários de sistema</div>
+                    <div class="bullet-point"><strong>1000+</strong> = usuários comuns</div>
+                    <p style="margin-top: 15px;"><strong>Analogia:</strong> É como o CPF de cada pessoa.</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>👥 GID (Group ID)</h3>
+                    <p>Número único que identifica o grupo.</p>
+                    <div class="bullet-point">Usuários podem pertencer a vários grupos</div>
+                    <div class="bullet-point">Facilita gerenciar permissões</div>
+                    <div class="bullet-point">Grupo primário + grupos secundários</div>
+                    <p style="margin-top: 15px;"><strong>Analogia:</strong> É como o departamento na empresa.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Descobrindo quem sou -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔍 Descobrindo Quem Sou Eu</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Quem sou eu?</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">whoami</span><br>
+                <span class="output">usuario</span><br><br>
+                
+                <span class="comment"># Informações detalhadas (UID, GID, grupos)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">id</span><br>
+                <span class="output">uid=1000(usuario) gid=1000(usuario) grupos=1000(usuario),27(sudo),100(users)</span><br><br>
+                
+                <span class="comment"># Apenas meus grupos</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">groups</span><br>
+                <span class="output">usuario sudo users</span>
+            </div>
+            <div class="grid-3" style="margin-top: 20px;">
+                <div class="command-card">
+                    <div class="cmd">whoami</div>
+                    <h4>Quem sou?</h4>
+                    <p>Mostra seu nome de usuário</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">id</div>
+                    <h4>Identidade completa</h4>
+                    <p>UID, GID e todos os grupos</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">groups</div>
+                    <h4>Meus grupos</h4>
+                    <p>Lista grupos que pertenço</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Arquivo /etc/passwd -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📄 O Arquivo /etc/passwd</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Todos os usuários do sistema estão cadastrados aqui!</p>
+            </div>
+            <div class="content-box box-terminal">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /etc/passwd | grep usuario</span><br>
+                <span class="output">usuario:x:1000:1000:Usuario da Silva:/home/usuario:/bin/bash</span>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <p style="text-align: center; margin-bottom: 15px;"><strong>Cada campo separado por :</strong></p>
+                <div class="passwd-line" style="justify-content: center; font-size: 1.1em;">
+                    <span class="field-user">usuario</span>:
+                    <span class="field-pass">x</span>:
+                    <span class="field-uid">1000</span>:
+                    <span class="field-gid">1000</span>:
+                    <span class="field-info">Usuario da Silva</span>:
+                    <span class="field-home">/home/usuario</span>:
+                    <span class="field-shell">/bin/bash</span>
+                </div>
+                <div class="grid-4" style="margin-top: 20px; font-size: 0.85em;">
+                    <div style="text-align: center;"><span class="field-user" style="padding: 5px 10px; border-radius: 5px;">Login</span></div>
+                    <div style="text-align: center;"><span class="field-pass" style="padding: 5px 10px; border-radius: 5px;">Senha*</span></div>
+                    <div style="text-align: center;"><span class="field-uid" style="padding: 5px 10px; border-radius: 5px;">UID</span></div>
+                    <div style="text-align: center;"><span class="field-gid" style="padding: 5px 10px; border-radius: 5px;">GID</span></div>
+                </div>
+                <div class="grid-3" style="margin-top: 10px; font-size: 0.85em;">
+                    <div style="text-align: center;"><span class="field-info" style="padding: 5px 10px; border-radius: 5px;">Nome/Info</span></div>
+                    <div style="text-align: center;"><span class="field-home" style="padding: 5px 10px; border-radius: 5px;">Pasta Home</span></div>
+                    <div style="text-align: center;"><span class="field-shell" style="padding: 5px 10px; border-radius: 5px;">Shell</span></div>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 15px; font-size: 0.9em; color: var(--text-light);">
+                * O "x" indica que a senha está no arquivo /etc/shadow (mais seguro)
+            </p>
+        </div>
+
+        <!-- SLIDE 7: Arquivo /etc/shadow -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔒 O Arquivo /etc/shadow</h2>
+            <div class="content-box box-warning" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">⚠️ Aqui ficam as senhas criptografadas! Só o root pode ler.</p>
+            </div>
+            <div class="content-box box-terminal">
+                <span class="comment"># Tentar ler sem ser root</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /etc/shadow</span><br>
+                <span style="color: #fc8181;">cat: /etc/shadow: Permissão negada</span><br><br>
+                
+                <span class="comment"># Com sudo funciona</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sudo cat /etc/shadow | grep usuario</span><br>
+                <span class="output">usuario:$6$xyz...hash...abc:19500:0:99999:7:::</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>🔐 Por que separar?</h3>
+                    <p>O /etc/passwd precisa ser lido por todos (programas usam). Mas as senhas não!</p>
+                    <p style="margin-top: 10px;">Separando em /etc/shadow, só o root acessa as senhas.</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🔢 O hash da senha</h3>
+                    <p>A senha não é guardada em texto. É transformada em um código (hash) impossível de reverter.</p>
+                    <p style="margin-top: 10px;">$6$ = SHA-512 (muito seguro!)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Arquivo /etc/group -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👥 O Arquivo /etc/group</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Lista todos os grupos e seus membros!</p>
+            </div>
+            <div class="content-box box-terminal">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /etc/group | grep -E "sudo|users"</span><br>
+                <span class="output">sudo:x:27:usuario,maria,joao</span><br>
+                <span class="output">users:x:100:usuario,maria</span>
+            </div>
+            
+            <div class="grid-2" style="margin-top: 30px;">
+                <div class="content-box box-info">
+                    <h3>📋 Estrutura</h3>
+                    <p><code>nome:senha:GID:membros</code></p>
+                    <div class="bullet-point"><strong>nome</strong> - Nome do grupo</div>
+                    <div class="bullet-point"><strong>x</strong> - Senha (raramente usada)</div>
+                    <div class="bullet-point"><strong>GID</strong> - ID do grupo</div>
+                    <div class="bullet-point"><strong>membros</strong> - Lista de usuários</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>💡 Grupos Importantes</h3>
+                    <div class="bullet-point"><strong>sudo</strong> - Pode usar sudo</div>
+                    <div class="bullet-point"><strong>adm</strong> - Lê logs do sistema</div>
+                    <div class="bullet-point"><strong>www-data</strong> - Servidor web</div>
+                    <div class="bullet-point"><strong>docker</strong> - Usa Docker</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: Criando Usuários - useradd -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">➕ Criando Usuários: useradd</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Criar usuário básico (modo "cru")</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">useradd joao</span><br><br>
+                
+                <span class="comment"># Criar com opções (recomendado)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">useradd -m -s /bin/bash -c "João Silva" joao</span><br><br>
+                
+                <span class="comment"># Definir senha</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">passwd joao</span><br>
+                <span class="output">Nova senha: </span><br>
+                <span class="output">Redigite a nova senha: </span><br>
+                <span class="output">passwd: senha atualizada com sucesso</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>🔧 Opções do useradd</h3>
+                    <div class="bullet-point"><code>-m</code> → Cria pasta home</div>
+                    <div class="bullet-point"><code>-s</code> → Define o shell</div>
+                    <div class="bullet-point"><code>-c</code> → Comentário (nome completo)</div>
+                    <div class="bullet-point"><code>-g</code> → Grupo primário</div>
+                    <div class="bullet-point"><code>-G</code> → Grupos adicionais</div>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>⚠️ Atenção!</h3>
+                    <p>O <code>useradd</code> sozinho NÃO cria a pasta home nem define senha!</p>
+                    <p style="margin-top: 10px;">Use sempre <code>-m</code> ou prefira o <code>adduser</code>.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Criando Usuários - adduser -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">➕ Criando Usuários: adduser (Mais Fácil!)</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">O <code>adduser</code> é interativo e faz tudo automaticamente!</p>
+            </div>
+            <div class="content-box box-terminal">
+                <span class="root-prompt">root@linux</span>:~# <span class="command">adduser maria</span><br>
+                <span class="output">Adicionando usuário 'maria' ...</span><br>
+                <span class="output">Adicionando novo grupo 'maria' (1001) ...</span><br>
+                <span class="output">Adicionando novo usuário 'maria' (1001) com grupo 'maria' ...</span><br>
+                <span class="output">Criando diretório pessoal '/home/maria' ...</span><br>
+                <span class="output">Copiando arquivos de '/etc/skel' ...</span><br>
+                <span class="output">Nova senha: </span><br>
+                <span class="output">Redigite a nova senha: </span><br>
+                <span class="output">Nome completo []: Maria Oliveira</span><br>
+                <span class="output">Número da sala []: </span><br>
+                <span class="output">Telefone de trabalho []: </span><br>
+                <span class="output">Telefone residencial []: </span><br>
+                <span class="output">Outro []: </span><br>
+                <span class="output">A informação está correta? [S/n] S</span>
+            </div>
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>✅ O adduser faz tudo:</h3>
+                <p>Cria usuário + grupo + pasta home + pede senha + copia arquivos padrão. Muito mais prático!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: useradd vs adduser -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚖️ useradd vs adduser</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3 style="text-align: center;">useradd</h3>
+                    <div class="bullet-point">Comando de <strong>baixo nível</strong></div>
+                    <div class="bullet-point">Não é interativo</div>
+                    <div class="bullet-point">Precisa de várias opções</div>
+                    <div class="bullet-point">Disponível em TODAS as distros</div>
+                    <div class="bullet-point">Melhor para <strong>scripts</strong></div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <code style="background: #e2e8f0; padding: 10px; border-radius: 5px;">useradd -m -s /bin/bash joao</code>
+                    </div>
+                </div>
+                <div class="content-box box-success">
+                    <h3 style="text-align: center;">adduser</h3>
+                    <div class="bullet-point">Comando de <strong>alto nível</strong></div>
+                    <div class="bullet-point">Interativo e amigável</div>
+                    <div class="bullet-point">Configura tudo automaticamente</div>
+                    <div class="bullet-point">Disponível em Debian/Ubuntu</div>
+                    <div class="bullet-point">Melhor para uso <strong>manual</strong></div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <code style="background: #d1fae5; padding: 10px; border-radius: 5px;">adduser joao</code>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="text-align: center; margin-top: 20px;">
+                💡 <strong>Dica:</strong> No dia a dia, use <code>adduser</code>. Em scripts, use <code>useradd</code>.
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Modificando Usuários -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">✏️ Modificando Usuários: usermod</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Adicionar usuário ao grupo sudo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -aG sudo maria</span><br><br>
+                
+                <span class="comment"># Mudar o shell do usuário</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -s /bin/zsh joao</span><br><br>
+                
+                <span class="comment"># Mudar a pasta home</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -d /home/novo_joao -m joao</span><br><br>
+                
+                <span class="comment"># Renomear usuário</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -l joao_novo joao</span>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚠️ Cuidado com o -G!</h3>
+                <p><code>usermod -G grupo usuario</code> → <strong>SUBSTITUI</strong> todos os grupos!</p>
+                <p><code>usermod -aG grupo usuario</code> → <strong>ADICIONA</strong> ao grupo (use -a!)</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Opções do usermod -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 Opções do usermod</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>Opções Principais</h3>
+                    <div class="bullet-point"><code>-aG</code> → Adiciona a grupo(s)</div>
+                    <div class="bullet-point"><code>-d</code> → Muda diretório home</div>
+                    <div class="bullet-point"><code>-m</code> → Move arquivos para novo home</div>
+                    <div class="bullet-point"><code>-s</code> → Muda o shell</div>
+                    <div class="bullet-point"><code>-l</code> → Renomeia o login</div>
+                    <div class="bullet-point"><code>-c</code> → Muda o comentário</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>Bloqueio de Conta</h3>
+                    <div class="bullet-point"><code>-L</code> → Bloqueia (Lock)</div>
+                    <div class="bullet-point"><code>-U</code> → Desbloqueia (Unlock)</div>
+                    <div class="bullet-point"><code>-e</code> → Data de expiração</div>
+                    <div class="content-box box-terminal" style="padding: 10px; margin-top: 15px; font-size: 0.9em;">
+                        <span class="comment"># Bloquear conta</span><br>
+                        <span class="command">usermod -L joao</span><br><br>
+                        <span class="comment"># Expirar em 2024-12-31</span><br>
+                        <span class="command">usermod -e 2024-12-31 temp</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 14: Removendo Usuários -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🗑️ Removendo Usuários: userdel</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Remove usuário MAS mantém a pasta home</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">userdel joao</span><br><br>
+                
+                <span class="comment"># Remove usuário E a pasta home (cuidado!)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">userdel -r joao</span><br><br>
+                
+                <span class="comment"># Forçar remoção mesmo se usuário estiver logado</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">userdel -f joao</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>🔧 Opções</h3>
+                    <div class="bullet-point"><code>-r</code> → Remove home e mail</div>
+                    <div class="bullet-point"><code>-f</code> → Força remoção</div>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>⚠️ Atenção!</h3>
+                    <p>Sem <code>-r</code>, a pasta /home/usuario permanece! Pode ser útil para backup, mas ocupa espaço.</p>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 20px;">
+                <h3>💡 Alternativa mais amigável:</h3>
+                <p><code>deluser joao</code> → Versão interativa (Debian/Ubuntu)</p>
+                <p><code>deluser --remove-home joao</code> → Remove com a pasta</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 15: Gerenciando Grupos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👥 Gerenciando Grupos</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Criar um novo grupo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">groupadd desenvolvedores</span><br><br>
+                
+                <span class="comment"># Adicionar usuário ao grupo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -aG desenvolvedores maria</span><br><br>
+                
+                <span class="comment"># Verificar membros do grupo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">getent group desenvolvedores</span><br>
+                <span class="output">desenvolvedores:x:1002:maria</span><br><br>
+                
+                <span class="comment"># Remover grupo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">groupdel desenvolvedores</span>
+            </div>
+            <div class="grid-3" style="margin-top: 20px;">
+                <div class="command-card">
+                    <div class="cmd">groupadd</div>
+                    <h4>Criar Grupo</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">groupmod</div>
+                    <h4>Modificar Grupo</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">groupdel</div>
+                    <h4>Remover Grupo</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 16: Caso prático - grupos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Caso Prático: Equipe de Desenvolvimento</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p>Vamos criar uma estrutura para uma equipe compartilhar arquivos!</p>
+            </div>
+            <div class="content-box box-terminal">
+                <span class="comment"># 1. Criar o grupo da equipe</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">groupadd equipe-dev</span><br><br>
+                
+                <span class="comment"># 2. Adicionar membros</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -aG equipe-dev maria</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -aG equipe-dev joao</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -aG equipe-dev ana</span><br><br>
+                
+                <span class="comment"># 3. Criar pasta compartilhada</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">mkdir /projetos</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chown root:equipe-dev /projetos</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chmod 770 /projetos</span>
+            </div>
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <p>✅ Agora maria, joao e ana podem ler e escrever em /projetos, mas outros usuários não!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 17: O que é sudo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🦸 O Poder do sudo</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.3em;"><strong>sudo</strong> = <strong>S</strong>uper <strong>U</strong>ser <strong>DO</strong></p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🤔 O que é?</h3>
+                    <p>Permite executar comandos como root (administrador) <strong>temporariamente</strong>, sem precisar logar como root.</p>
+                    <p style="margin-top: 15px;"><strong>Analogia:</strong> É como pegar a chave mestra emprestada só para abrir uma porta específica, depois devolver.</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>✅ Vantagens</h3>
+                    <div class="bullet-point">Mais seguro que logar como root</div>
+                    <div class="bullet-point">Registra quem fez o quê (log)</div>
+                    <div class="bullet-point">Controle granular de permissões</div>
+                    <div class="bullet-point">Pede sua senha (confirmação)</div>
+                </div>
+            </div>
+            <div class="content-box box-terminal" style="margin-top: 20px;">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sudo apt update</span><br>
+                <span class="output">[sudo] senha para usuario: </span><br>
+                <span class="output">Atingido:1 http://archive.ubuntu.com/ubuntu focal InRelease</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 18: sudo vs su -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚔️ sudo vs su: Qual a diferença?</h2>
+            <div class="sudo-comparison">
+                <div class="sudo-box content-box box-success">
+                    <h3 style="color: #38a169;">sudo comando</h3>
+                    <p>Executa <strong>UM</strong> comando como root</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Usa SUA senha</p>
+                </div>
+                <div class="sudo-arrow">→</div>
+                <div class="sudo-box content-box box-warning">
+                    <h3 style="color: #e53e3e;">su</h3>
+                    <p>Troca para OUTRO usuário (vira root)</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Usa a senha do ROOT</p>
+                </div>
+            </div>
+            <div class="content-box box-terminal">
+                <span class="comment"># sudo: executa um comando e volta</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sudo ls /root</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="comment"># ainda sou "usuario"</span><br><br>
+                
+                <span class="comment"># su: viro root até digitar "exit"</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">su -</span><br>
+                <span class="output">Senha: (senha do root)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="comment"># agora SOU root!</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">exit</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="comment"># voltei a ser "usuario"</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 19: Quem pode usar sudo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔐 Quem Pode Usar sudo?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Apenas usuários do <strong>grupo sudo</strong> podem usar o comando!</p>
+            </div>
+            <div class="content-box box-terminal">
+                <span class="comment"># Verificar se estou no grupo sudo</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">groups</span><br>
+                <span class="output">usuario sudo users</span> <span class="comment"># ✅ Tem "sudo" na lista!</span><br><br>
+                
+                <span class="comment"># Adicionar alguém ao grupo sudo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -aG sudo maria</span><br><br>
+                
+                <span class="comment"># O arquivo de configuração</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">cat /etc/sudoers</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>📁 /etc/sudoers</h3>
+                    <p>Arquivo que define QUEM pode usar sudo e COMO.</p>
+                    <p style="margin-top: 10px;">⚠️ Edite apenas com <code>visudo</code>!</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>💡 Dica</h3>
+                    <p>Em algumas distros o grupo se chama <strong>wheel</strong> em vez de sudo.</p>
+                    <p style="margin-top: 10px;">CentOS/RHEL usam wheel.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 20: Boas práticas sudo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">✅ Boas Práticas com sudo</h2>
+            <div class="grid-2">
+                <div class="content-box box-success">
+                    <h3>👍 FAÇA</h3>
+                    <div class="bullet-point">Use sudo apenas quando necessário</div>
+                    <div class="bullet-point">Prefira sudo a logar como root</div>
+                    <div class="bullet-point">Leia o comando antes de executar</div>
+                    <div class="bullet-point">Use sudo -l para ver suas permissões</div>
+                    <div class="bullet-point">Dê sudo só para quem precisa</div>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>👎 EVITE</h3>
+                    <div class="bullet-point">Não use <code>sudo su</code> como rotina</div>
+                    <div class="bullet-point">Não execute scripts desconhecidos com sudo</div>
+                    <div class="bullet-point">Não dê sudo para todos os usuários</div>
+                    <div class="bullet-point">Não ignore os avisos!</div>
+                    <div class="bullet-point">Não edite /etc/sudoers sem visudo</div>
+                </div>
+            </div>
+            <div class="content-box box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Ver o que eu posso fazer com sudo</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sudo -l</span><br>
+                <span class="output">User usuario may run the following commands:</span><br>
+                <span class="output">&nbsp;&nbsp;&nbsp;&nbsp;(ALL : ALL) ALL</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 21: Alterando senhas -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔑 Alterando Senhas: passwd</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Mudar MINHA própria senha</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">passwd</span><br>
+                <span class="output">Mudando senha para usuario.</span><br>
+                <span class="output">Senha atual: </span><br>
+                <span class="output">Nova senha: </span><br>
+                <span class="output">Redigite a nova senha: </span><br>
+                <span class="output">passwd: senha atualizada com sucesso</span><br><br>
+                
+                <span class="comment"># Root pode mudar senha de qualquer um</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">passwd maria</span><br>
+                <span class="output">Nova senha: </span><br>
+                <span class="output">Redigite a nova senha: </span><br>
+                <span class="output">passwd: senha atualizada com sucesso</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>🔧 Opções úteis</h3>
+                    <div class="bullet-point"><code>passwd -e user</code> → Expira a senha (força trocar)</div>
+                    <div class="bullet-point"><code>passwd -l user</code> → Bloqueia a conta</div>
+                    <div class="bullet-point"><code>passwd -u user</code> → Desbloqueia</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 Forçar troca no primeiro login</h3>
+                    <p>Útil ao criar contas novas!</p>
+                    <div class="content-box box-terminal" style="padding: 10px; margin-top: 10px; font-size: 0.9em;">
+                        <span class="command">passwd -e joao</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 22: Listando usuários -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Listando Usuários do Sistema</h2>
+            <div class="content-box box-terminal">
+                <span class="comment"># Listar TODOS os usuários</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /etc/passwd</span><br><br>
+                
+                <span class="comment"># Listar apenas os nomes de usuário</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cut -d: -f1 /etc/passwd</span><br><br>
+                
+                <span class="comment"># Listar usuários "humanos" (UID >= 1000)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk -F: '$3 >= 1000 {print $1}' /etc/passwd</span><br>
+                <span class="output">usuario</span><br>
+                <span class="output">maria</span><br>
+                <span class="output">joao</span><br><br>
+                
+                <span class="comment"># Quem está logado agora?</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">who</span><br>
+                <span class="output">usuario  tty1         2024-01-15 10:30</span><br>
+                <span class="output">maria    pts/0        2024-01-15 11:45</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="command-card">
+                    <div class="cmd">who</div>
+                    <h4>Quem está logado</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">w</div>
+                    <h4>Logados + o que fazem</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 23: Resumo dos comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos de Usuários</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">useradd</div>
+                    <h4>Criar usuário</h4>
+                    <p>(baixo nível)</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">adduser</div>
+                    <h4>Criar usuário</h4>
+                    <p>(interativo)</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">usermod</div>
+                    <h4>Modificar usuário</h4>
+                    <p>-aG, -s, -d</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">userdel</div>
+                    <h4>Remover usuário</h4>
+                    <p>-r remove home</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">passwd</div>
+                    <h4>Alterar senha</h4>
+                    <p>-e expira</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">groupadd</div>
+                    <h4>Criar grupo</h4>
+                    <p></p>
+                </div>
+            </div>
+            <div class="grid-3" style="margin-top: 15px;">
+                <div class="command-card">
+                    <div class="cmd">id</div>
+                    <h4>Ver UID/GID</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">whoami</div>
+                    <h4>Quem sou eu</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">sudo</div>
+                    <h4>Executar como root</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 24: Quiz Interativo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center;">Arraste os comandos para suas funções corretas!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Criar usuário (interativo)</div>
+                        <div class="drop-zone" data-correct="adduser">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Adicionar usuário a um grupo</div>
+                        <div class="drop-zone" data-correct="usermod">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Executar comando como root</div>
+                        <div class="drop-zone" data-correct="sudo">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Ver meu UID e grupos</div>
+                        <div class="drop-zone" data-correct="id">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Alterar senha</div>
+                        <div class="drop-zone" data-correct="passwd">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Remover usuário</div>
+                        <div class="drop-zone" data-correct="userdel">Arraste aqui</div>
+                    </div>
+                </div>
+
+                <div class="col-answers" id="answersPool">
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 25: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓👥</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Você completou a Aula 03!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos hoje:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Tipos de usuários (root, comum, sistema)</div>
+                            <div class="bullet-point">UID, GID e arquivos /etc/passwd</div>
+                            <div class="bullet-point">Criar usuários: useradd, adduser</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">Modificar e remover usuários</div>
+                            <div class="bullet-point">Gerenciar grupos</div>
+                            <div class="bullet-point">O poder do sudo</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p>Vamos aprender sobre <strong>Permissões de Arquivos</strong>! O famoso rwx e chmod.</p>
+                </div>
+                <div style="margin-top: 40px;">
+                    <a href="dashboard.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">
+                        Voltar para o Dashboard 🏠
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        // === LÓGICA DE NAVEGAÇÃO ===
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // === LÓGICA DO QUIZ ===
+        const answersData = [
+            { id: 'adduser', text: 'adduser' },
+            { id: 'usermod', text: 'usermod -aG' },
+            { id: 'sudo', text: 'sudo' },
+            { id: 'id', text: 'id' },
+            { id: 'passwd', text: 'passwd' },
+            { id: 'userdel', text: 'userdel' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            const shuffled = shuffleArray([...answersData]);
+            
+            shuffled.forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                
+                div.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                });
+                div.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                });
+                
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    
+                    const jaTemResposta = zone.querySelector('.answer-item');
+                    
+                    if (draggedItem && !jaTemResposta) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            const total = zones.length;
+            
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${total}!</h3>`;
+            
+            if(correct === total) resultDiv.innerHTML += '<p>🎉 Perfeito! Você é um administrador de usuários!</p>';
+            else if(correct >= total/2) resultDiv.innerHTML += '<p>👍 Bom trabalho! Revise os que errou.</p>';
+            else resultDiv.innerHTML += '<p>📚 Continue praticando! Crie usuários de teste no seu Linux!</p>';
+        }
+
+        function resetQuiz() {
+            initQuiz();
+        }
+
+        // Inicia tudo
+        initQuiz();
+
+    </script>
+</body>
+</html>
