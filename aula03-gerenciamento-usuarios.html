@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -71,6 +72,7 @@
         .viewer-container {
             margin-top: 80px;
             padding: 20px;
+            padding-bottom: 100px;
             flex: 1;
             display: flex;
             justify-content: center;
@@ -85,6 +87,7 @@
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             padding: 50px;
+            padding-bottom: 100px;
             position: relative;
             display: none;
             flex-direction: column;
@@ -373,7 +376,7 @@
         /* Responsivo */
         @media (max-width: 768px) {
             .viewer-container { padding: 10px; margin-top: 70px; }
-            .slide-card { padding: 25px; min-height: 70vh; }
+            .slide-card { padding: 25px; padding-bottom: 100px; min-height: 70vh; }
             .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
             .drag-drop-container { flex-direction: column; }
             .classroom-header { padding: 10px 15px; }
@@ -558,7 +561,7 @@
                     <div style="text-align: center;"><span class="field-shell" style="padding: 5px 10px; border-radius: 5px;">Shell</span></div>
                 </div>
             </div>
-            <p style="text-align: center; margin-top: 15px; font-size: 0.9em; color: var(--text-light);">
+            <p style="text-align: center; margin-top: 20px; font-size: 0.9em; color: var(--text-light);">
                 * O "x" indica que a senha está no arquivo /etc/shadow (mais seguro)
             </p>
         </div>
