@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 16 - Servidor de Arquivos Samba</title>
+    <style>
+        :root {
+            --primary: #e67e22;
+            --secondary: #d35400;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+            --accent-orange: #f39c12;
+            --accent-cyan: #17a2b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            padding-bottom: 100px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.4em; }
+
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        
+        .box-highlight { border-color: var(--accent-orange); background: #fff8e1; }
+        .box-info { border-color: var(--primary); background: #fef5e7; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-tip { border-color: var(--accent-cyan); background: #e6fffa; }
+        
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .config-section { color: #f687b3; font-weight: bold; }
+        .box-terminal .config-key { color: #fbd38d; }
+        .box-terminal .config-value { color: #68d391; }
+        .box-terminal .highlight { color: #ff6b6b; font-weight: bold; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+        .bullet-point {
+            display: flex;
+            align-items: flex-start;
+            margin: 10px 0;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "📂";
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em; 
+            color: var(--primary);
+            background: #fef5e7;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 10px; }
+        .command-card p { font-size: 0.9em; color: var(--text-light); }
+
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.95em;
+        }
+        .reference-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .reference-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .reference-table tr:hover { background: #fef5e7; }
+        .reference-table code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+        }
+
+        .samba-diagram {
+            background: linear-gradient(135deg, #fef5e7, #ffeaa7);
+            border: 2px solid var(--primary);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .samba-diagram .device {
+            display: inline-block;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .samba-diagram .arrow {
+            font-size: 2em;
+            color: var(--primary);
+            margin: 0 10px;
+        }
+
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+
+        .quiz-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; padding-bottom: 100px; min-height: 70vh; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn">
+                <span>←</span> Voltar
+            </a>
+            <div class="lesson-info">
+                <h1>Administração de Redes</h1>
+                <span>Módulo 3 • Aula 16</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">📂</div>
+                <h1 class="slide-title">Servidor de Arquivos Samba</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Compartilhamento Windows ↔ Linux</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">A ponte entre dois mundos!</p>
+                </div>
+                <div class="samba-diagram" style="margin-top: 30px;">
+                    <div class="device">🪟 Windows</div>
+                    <span class="arrow">⟷</span>
+                    <div class="device" style="background: var(--primary); color: white;">🐧 Samba Server</div>
+                    <span class="arrow">⟷</span>
+                    <div class="device">🐧 Linux</div>
+                </div>
+                <div class="content-box box-info" style="margin-top: 20px;">
+                    💡 Samba permite que Windows e Linux compartilhem arquivos como se fossem da mesma família!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que é Samba? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 O que é Samba?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.3em;">Samba = Software que faz Linux "falar" o idioma do Windows!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🌉 Analogia da Ponte</h3>
+                        <p>Imagine dois países que falam idiomas diferentes:<br><br>
+                        🪟 <strong>Windows</strong> fala "SMB/CIFS"<br>
+                        🐧 <strong>Linux</strong> fala "NFS"<br><br>
+                        O <strong>Samba</strong> é o tradutor que permite a comunicação!</p>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>📦 O que ele faz?</h3>
+                        <div class="bullet-point">Compartilha arquivos</div>
+                        <div class="bullet-point">Compartilha impressoras</div>
+                        <div class="bullet-point">Autentica usuários</div>
+                        <div class="bullet-point">Controla permissões</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-tip">
+                        <h3>✅ Vantagens</h3>
+                        <div class="bullet-point">Gratuito e open source</div>
+                        <div class="bullet-point">Compatível com Windows</div>
+                        <div class="bullet-point">Configuração flexível</div>
+                        <div class="bullet-point">Amplamente usado</div>
+                    </div>
+                    <div class="content-box box-highlight">
+                        <h3>🏢 Cenário Típico</h3>
+                        <p>Empresa com 50 PCs Windows<br>
+                        + 1 Servidor Linux<br>
+                        = Todos acessam os mesmos arquivos!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Protocolo SMB -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔌 Protocolo SMB/CIFS</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;"><strong>S</strong>erver <strong>M</strong>essage <strong>B</strong>lock - O "idioma" da rede Windows</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📡 Como Funciona</h3>
+                        <p>1️⃣ Windows pede: <em>"Quero acessar \\servidor\pasta"</em><br><br>
+                        2️⃣ Samba responde: <em>"OK, aqui está!"</em><br><br>
+                        3️⃣ Windows vê como se fosse um drive local</p>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🔢 Portas Utilizadas</h3>
+                        <table class="reference-table">
+                            <tr><th>Porta</th><th>Serviço</th></tr>
+                            <tr><td><code>139</code></td><td>NetBIOS Session</td></tr>
+                            <tr><td><code>445</code></td><td>SMB direto</td></tr>
+                            <tr><td><code>137-138</code></td><td>NetBIOS Name/Datagram</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-tip">
+                        <h3>🗂️ Tipos de Compartilhamento</h3>
+                        <table class="reference-table">
+                            <tr><th>Tipo</th><th>Descrição</th></tr>
+                            <tr><td>Público</td><td>Sem autenticação</td></tr>
+                            <tr><td>Privado</td><td>Com usuário/senha</td></tr>
+                            <tr><td>Somente leitura</td><td>Apenas visualizar</td></tr>
+                            <tr><td>Leitura/Escrita</td><td>Modificar arquivos</td></tr>
+                        </table>
+                    </div>
+                    <div class="samba-diagram" style="padding: 15px;">
+                        <p><strong>Acesso no Windows:</strong></p>
+                        <p style="font-family: monospace; font-size: 1.2em; margin-top: 10px;">\\192.168.0.1\pasta</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Arquivos do Samba -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📁 Arquivos Importantes</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📋 Arquivos de Configuração</h3>
+                        <table class="reference-table">
+                            <tr><th>Arquivo</th><th>Função</th></tr>
+                            <tr><td><code>/etc/samba/smb.conf</code></td><td>Config principal</td></tr>
+                            <tr><td><code>/var/log/samba/</code></td><td>Logs do serviço</td></tr>
+                            <tr><td><code>/var/lib/samba/</code></td><td>Dados internos</td></tr>
+                        </table>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🔧 Serviços do Samba</h3>
+                        <p><strong>smbd</strong> → Compartilhamento de arquivos<br>
+                        <strong>nmbd</strong> → Resolução de nomes NetBIOS<br>
+                        <strong>winbindd</strong> → Integração com AD (opcional)</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>⚙️ Estrutura do smb.conf</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.85em;">
+                            <span class="config-section">[global]</span><br>
+                            &nbsp;&nbsp;<span class="config-key">netbios name</span> = <span class="config-value">SERVIDOR</span><br>
+                            &nbsp;&nbsp;<span class="config-key">security</span> = <span class="config-value">user</span><br><br>
+                            <span class="config-section">[compartilhamento]</span><br>
+                            &nbsp;&nbsp;<span class="config-key">path</span> = <span class="config-value">/caminho/pasta</span><br>
+                            &nbsp;&nbsp;<span class="config-key">read only</span> = <span class="config-value">no</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>💡 Dica</h3>
+                        <p><code>[global]</code> = Configurações do servidor<br>
+                        <code>[nome]</code> = Cada compartilhamento</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Passo 1 - Instalação -->
+        <div class="slide-card">
+            <div class="step-number">1</div>
+            <h2 class="slide-subtitle">📦 Passo 1: Instalar o Samba</h2>
+            <div class="box-terminal" style="margin-bottom: 20px;">
+                <span class="comment"># Atualizar repositórios</span><br>
+                <span class="prompt">$</span> <span class="command">sudo apt-get update</span><br><br>
+                <span class="comment"># Instalar o Samba</span><br>
+                <span class="prompt">$</span> <span class="command">sudo apt-get install samba</span>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📋 O que é instalado?</h3>
+                        <div class="bullet-point">Pacote samba (servidor)</div>
+                        <div class="bullet-point">Ferramentas de configuração</div>
+                        <div class="bullet-point">Serviços smbd e nmbd</div>
+                        <div class="bullet-point">Arquivo smb.conf padrão</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>✅ Verificar Instalação</h3>
+                        <div class="box-terminal" style="padding: 10px; font-size: 0.85em;">
+                            <span class="prompt">$</span> <span class="command">samba --version</span><br>
+                            <span class="output">Version 4.15.13-Ubuntu</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 Após Instalação</h3>
+                <p>Os serviços <code>smbd</code> e <code>nmbd</code> são iniciados automaticamente, mas precisamos configurar antes de usar!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Passo 2 - Backup -->
+        <div class="slide-card">
+            <div class="step-number">2</div>
+            <h2 class="slide-subtitle">💾 Passo 2: Backup da Configuração</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Sempre faça backup antes de modificar!</p>
+            </div>
+            <div class="box-terminal" style="margin-bottom: 20px;">
+                <span class="comment"># Fazer backup do arquivo original</span><br>
+                <span class="prompt">$</span> <span class="command">sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.bkp</span><br><br>
+                <span class="comment"># Verificar</span><br>
+                <span class="prompt">$</span> <span class="command">ls /etc/samba/</span><br>
+                <span class="output">smb.conf.bkp</span>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-success">
+                    <h3>✅ Por que usar mv?</h3>
+                    <p>Usamos <code>mv</code> (mover) ao invés de <code>cp</code> (copiar) para criar um arquivo de configuração limpo, do zero.</p>
+                </div>
+                <div class="content-box box-tip">
+                    <h3>🔄 Restaurar se precisar</h3>
+                    <p><code>sudo cp /etc/samba/smb.conf.bkp /etc/samba/smb.conf</code></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Passo 3 - Configuração -->
+        <div class="slide-card">
+            <div class="step-number">3</div>
+            <h2 class="slide-subtitle">📝 Passo 3: Criar Configuração</h2>
+            <div class="box-terminal" style="margin-bottom: 15px;">
+                <span class="prompt">$</span> <span class="command">sudo vim /etc/samba/smb.conf</span>
+            </div>
+            <div class="box-terminal" style="font-size: 0.85em; line-height: 1.5;">
+                <span class="config-section">[global]</span><br>
+                &nbsp;&nbsp;<span class="config-key">netbios name</span> = <span class="config-value">SERVIDOR</span><br>
+                &nbsp;&nbsp;<span class="config-key">server string</span> = <span class="config-value">Servidor de Arquivos</span><br>
+                &nbsp;&nbsp;<span class="config-key">security</span> = <span class="config-value">user</span><br>
+                &nbsp;&nbsp;<span class="config-key">map to guest</span> = <span class="config-value">Bad User</span><br>
+                &nbsp;&nbsp;<span class="config-key">log file</span> = <span class="config-value">/var/log/samba/samba-log-%m</span><br><br>
+                <span class="config-section">[public]</span><br>
+                &nbsp;&nbsp;<span class="config-key">path</span> = <span class="config-value">/home/usuario/public</span><br>
+                &nbsp;&nbsp;<span class="config-key">read only</span> = <span class="config-value">no</span><br>
+                &nbsp;&nbsp;<span class="config-key">browseable</span> = <span class="config-value">yes</span><br>
+                &nbsp;&nbsp;<span class="config-key">guest ok</span> = <span class="config-value">no</span><br><br>
+                <span class="config-section">[guest]</span><br>
+                &nbsp;&nbsp;<span class="config-key">path</span> = <span class="config-value">/home/usuario/guest</span><br>
+                &nbsp;&nbsp;<span class="config-key">read only</span> = <span class="config-value">yes</span><br>
+                &nbsp;&nbsp;<span class="config-key">browseable</span> = <span class="config-value">yes</span><br>
+                &nbsp;&nbsp;<span class="config-key">guest ok</span> = <span class="config-value">yes</span>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 10px;">
+                <p>💾 Salvar: <strong>ESC</strong> → <strong>:wq</strong> → <strong>ENTER</strong></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Explicação da Configuração -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📖 Entendendo a Configuração</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>⚙️ Seção [global]</h3>
+                        <table class="reference-table">
+                            <tr><th>Parâmetro</th><th>Função</th></tr>
+                            <tr><td><code>netbios name</code></td><td>Nome na rede Windows</td></tr>
+                            <tr><td><code>server string</code></td><td>Descrição do servidor</td></tr>
+                            <tr><td><code>security</code></td><td>Tipo de autenticação</td></tr>
+                            <tr><td><code>map to guest</code></td><td>Trata usuários inválidos</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>📂 Seção [compartilhamento]</h3>
+                        <table class="reference-table">
+                            <tr><th>Parâmetro</th><th>Função</th></tr>
+                            <tr><td><code>path</code></td><td>Caminho da pasta</td></tr>
+                            <tr><td><code>read only</code></td><td>Somente leitura?</td></tr>
+                            <tr><td><code>browseable</code></td><td>Visível na rede?</td></tr>
+                            <tr><td><code>guest ok</code></td><td>Permite convidados?</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 15px;">
+                <h3>📋 Nossos Compartilhamentos</h3>
+                <p><strong>[public]</strong> → Leitura/escrita, precisa de senha<br>
+                <strong>[guest]</strong> → Somente leitura, acesso livre</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: Passo 4 - Criar Pastas e Usuário -->
+        <div class="slide-card">
+            <div class="step-number">4</div>
+            <h2 class="slide-subtitle">📁 Passo 4: Criar Pastas e Usuário</h2>
+            <div class="box-terminal" style="margin-bottom: 20px;">
+                <span class="comment"># Criar as pastas de compartilhamento</span><br>
+                <span class="prompt">$</span> <span class="command">mkdir ~/public ~/guest</span><br><br>
+                <span class="comment"># Ajustar permissões</span><br>
+                <span class="prompt">$</span> <span class="command">chmod 777 ~/public ~/guest</span><br><br>
+                <span class="comment"># Criar usuário do sistema</span><br>
+                <span class="prompt">$</span> <span class="command">sudo useradd samba</span><br><br>
+                <span class="comment"># Criar senha para o Samba</span><br>
+                <span class="prompt">$</span> <span class="command">sudo smbpasswd -a samba</span><br>
+                <span class="output">New SMB password: </span><span class="config-value">********</span><br>
+                <span class="output">Retype new SMB password: </span><span class="config-value">********</span><br>
+                <span class="output">Added user samba.</span>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>👤 Usuários no Samba</h3>
+                    <p><code>useradd</code> → Cria usuário no Linux<br>
+                    <code>smbpasswd -a</code> → Cria senha SMB</p>
+                    <p style="margin-top: 10px;"><strong>São senhas diferentes!</strong></p>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>⚠️ Permissão 777</h3>
+                    <p>Usamos 777 para testes.<br>
+                    Em produção, use permissões mais restritivas!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Passo 5 - Testar e Iniciar -->
+        <div class="slide-card">
+            <div class="step-number">5</div>
+            <h2 class="slide-subtitle">🚀 Passo 5: Testar e Iniciar</h2>
+            <div class="box-terminal" style="margin-bottom: 20px;">
+                <span class="comment"># Verificar configuração (SEM ERROS!)</span><br>
+                <span class="prompt">$</span> <span class="command">testparm -s</span><br><br>
+                <span class="comment"># Reiniciar serviços</span><br>
+                <span class="prompt">$</span> <span class="command">sudo systemctl restart smbd nmbd</span><br><br>
+                <span class="comment"># Habilitar para iniciar no boot</span><br>
+                <span class="prompt">$</span> <span class="command">sudo systemctl enable smbd nmbd</span><br><br>
+                <span class="comment"># Verificar status</span><br>
+                <span class="prompt">$</span> <span class="command">sudo systemctl status smbd</span>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-success">
+                        <h3>✅ testparm OK</h3>
+                        <div class="box-terminal" style="padding: 10px; font-size: 0.8em;">
+                            <span class="output">Load smb config files from /etc/samba/smb.conf</span><br>
+                            <span class="output">Loaded services file OK.</span><br>
+                            <span class="output">Server role: ROLE_STANDALONE</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-tip">
+                        <h3>🔍 Verificar Serviço</h3>
+                        <p>Status deve mostrar:<br>
+                        <code style="color: green;">● active (running)</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Acessar do Windows -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🪟 Acessando do Windows</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📋 Passo a Passo</h3>
+                        <p><strong>1.</strong> Abra o Explorador de Arquivos<br><br>
+                        <strong>2.</strong> Na barra de endereço, digite:<br>
+                        <code style="background: #e2e8f0; padding: 5px 10px; border-radius: 5px;">\\192.168.0.1</code><br><br>
+                        <strong>3.</strong> Digite as credenciais:<br>
+                        Usuário: <code>samba</code><br>
+                        Senha: <code>********</code><br><br>
+                        <strong>4.</strong> Acesse as pastas!</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="samba-diagram">
+                        <p style="font-size: 1.5em; margin-bottom: 15px;">📂 Resultado</p>
+                        <div class="device">📁 public</div>
+                        <div class="device">📁 guest</div>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>💡 Mapear como Drive</h3>
+                        <p>Clique direito → "Mapear unidade de rede"<br>
+                        Escolha letra (Z:) → Caminho: \\IP\pasta</p>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <h3>⚠️ Windows 10/11</h3>
+                <p>Se der erro, pode ser necessário habilitar "Logon de convidado inseguro" via <code>gpedit.msc</code></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Comandos Úteis -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 Comandos Úteis</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">testparm -s</div>
+                    <h4>Testar Config</h4>
+                    <p>Verifica erros no smb.conf</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">smbstatus</div>
+                    <h4>Conexões Ativas</h4>
+                    <p>Quem está conectado</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">pdbedit -L</div>
+                    <h4>Listar Usuários</h4>
+                    <p>Usuários do Samba</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">smbpasswd -a user</div>
+                    <h4>Adicionar Usuário</h4>
+                    <p>Novo usuário Samba</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">smbpasswd -x user</div>
+                    <h4>Remover Usuário</h4>
+                    <p>Excluir do Samba</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">smbpasswd user</div>
+                    <h4>Alterar Senha</h4>
+                    <p>Mudar senha existente</p>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># No Windows - Limpar credenciais salvas</span><br>
+                <span class="command">net use * /d /y</span><br><br>
+                <span class="comment"># Ver logs do Samba</span><br>
+                <span class="command">sudo tail -f /var/log/samba/log.smbd</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Arraste os conceitos para seus significados!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Arquivo de configuração principal</div>
+                        <div class="drop-zone" data-correct="smb.conf">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Comando para testar configuração</div>
+                        <div class="drop-zone" data-correct="testparm">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Serviço de compartilhamento</div>
+                        <div class="drop-zone" data-correct="smbd">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Define nome do servidor na rede</div>
+                        <div class="drop-zone" data-correct="netbios name">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Comando para criar senha SMB</div>
+                        <div class="drop-zone" data-correct="smbpasswd">Arraste aqui</div>
+                    </div>
+                </div>
+
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓📂</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Você completou a Aula 16!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">O que é Samba</div>
+                            <div class="bullet-point">Protocolo SMB/CIFS</div>
+                            <div class="bullet-point">Instalar e configurar</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">Criar compartilhamentos</div>
+                            <div class="bullet-point">Gerenciar usuários</div>
+                            <div class="bullet-point">Acessar do Windows</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p><strong>Servidor Apache</strong> - Configure seu próprio servidor web!</p>
+                </div>
+                <div class="content-box box-tip" style="max-width: 700px; margin-top: 20px;">
+                    <h3>💡 Lembre-se</h3>
+                    <p><code>testparm</code> para testar | <code>smbpasswd</code> para usuários | Acesso: <code>\\IP\pasta</code></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: 'smb.conf', text: 'smb.conf' },
+            { id: 'testparm', text: 'testparm' },
+            { id: 'smbd', text: 'smbd' },
+            { id: 'netbios name', text: 'netbios name' },
+            { id: 'smbpasswd', text: 'smbpasswd' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            const shuffled = shuffleArray([...answersData]);
+            
+            shuffled.forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                
+                div.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                });
+                div.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                });
+                
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina Samba!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom! Revise os erros.</p>';
+            else resultDiv.innerHTML += '<p>📚 Continue praticando!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+
+        initQuiz();
+    </script>
+</body>
+</html>
