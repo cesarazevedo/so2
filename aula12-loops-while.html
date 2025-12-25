@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 12 - Shell Script: Loops WHILE</title>
+    <style>
+        :root {
+            --primary: #8d6e63;
+            --secondary: #6d4c41;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+            --accent-orange: #ff9800;
+            --accent-cyan: #17a2b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            padding-bottom: 100px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.4em; }
+
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        
+        .box-highlight { border-color: var(--accent-orange); background: #fff8e1; }
+        .box-info { border-color: var(--primary); background: #efebe9; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-tip { border-color: var(--accent-cyan); background: #e6fffa; }
+        
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .shebang { color: #f687b3; }
+        .box-terminal .string { color: #68d391; }
+        .box-terminal .variable { color: #fbd38d; }
+        .box-terminal .keyword { color: #f687b3; font-weight: bold; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+        .bullet-point {
+            display: flex;
+            align-items: flex-start;
+            margin: 10px 0;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "🔄";
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.95em;
+        }
+        .reference-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .reference-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .reference-table tr:hover { background: #efebe9; }
+        .reference-table code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+
+        .quiz-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #e65100 100%);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; padding-bottom: 100px; min-height: 70vh; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn">
+                <span>←</span> Voltar
+            </a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 2 • Aula 12</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">🔄</div>
+                <h1 class="slide-title">Shell Script: Loops WHILE</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Repetir enquanto a condição for verdadeira!</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">while, do, done - O loop condicional</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 500px;">
+                    <span class="keyword">while</span> [ <span class="variable">$CONTADOR</span> -le 5 ]<br>
+                    <span class="keyword">do</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Volta $CONTADOR"</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">CONTADOR</span>=$(($CONTADOR + 1))<br>
+                    <span class="keyword">done</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Como um semáforo: enquanto verde, continue. Quando vermelho, pare!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que é WHILE? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🚦 O que é um Loop WHILE?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.3em;">WHILE = <strong>ENQUANTO</strong> a condição for verdadeira, repita!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🎯 Analogia do Semáforo</h3>
+                        <p><strong>🟢 Verde (condição verdadeira):</strong><br>
+                        Continue executando o loop</p>
+                        <p style="margin-top: 10px;"><strong>🔴 Vermelho (condição falsa):</strong><br>
+                        Pare imediatamente!</p>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>📝 Estrutura Básica</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">while</span> [ condição ]<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;comandos<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Modificar condição!</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>🔄 Como Funciona</h3>
+                        <p><strong>1.</strong> Testa a condição<br>
+                        <strong>2.</strong> Se verdadeira → executa comandos<br>
+                        <strong>3.</strong> Volta para o teste<br>
+                        <strong>4.</strong> Se falsa → sai do loop</p>
+                    </div>
+                    <div class="content-box box-warning">
+                        <h3>⚠️ Regra de Ouro</h3>
+                        <p><strong>Sempre modifique a variável de controle!</strong><br>
+                        Se não modificar → loop infinito! ♾️</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Primeiro Exemplo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Primeiro Exemplo</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🔢 Contador de 1 a 5</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="shebang">#!/bin/bash</span><br><br>
+                            <span class="variable">CONTADOR</span>=1<br><br>
+                            <span class="keyword">while</span> [ <span class="variable">$CONTADOR</span> -le 5 ]<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Volta $CONTADOR"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">CONTADOR</span>=$(($CONTADOR + 1))<br>
+                            <span class="keyword">done</span><br><br>
+                            <span class="command">echo</span> <span class="string">"Terminei!"</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>▶️ Resultado</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="output">Volta 1</span><br>
+                            <span class="output">Volta 2</span><br>
+                            <span class="output">Volta 3</span><br>
+                            <span class="output">Volta 4</span><br>
+                            <span class="output">Volta 5</span><br>
+                            <span class="output">Terminei!</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>💡 Entendendo</h3>
+                        <p><code>-le</code> = menor ou igual<br>
+                        <code>$(())</code> = fazer matemática<br>
+                        Quando CONTADOR=6, sai do loop!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Operadores de Comparação -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔢 Operadores de Comparação</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Use estes operadores para definir quando o loop para!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📊 Tabela de Operadores</h3>
+                        <table class="reference-table">
+                            <tr><th>Operador</th><th>Significado</th></tr>
+                            <tr><td><code>-lt</code></td><td>Menor que (&lt;)</td></tr>
+                            <tr><td><code>-le</code></td><td>Menor ou igual (≤)</td></tr>
+                            <tr><td><code>-gt</code></td><td>Maior que (&gt;)</td></tr>
+                            <tr><td><code>-ge</code></td><td>Maior ou igual (≥)</td></tr>
+                            <tr><td><code>-eq</code></td><td>Igual (=)</td></tr>
+                            <tr><td><code>-ne</code></td><td>Diferente (≠)</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>🧠 Dica de Memorização</h3>
+                        <p><strong>lt</strong> = Less Than (menor)<br>
+                        <strong>gt</strong> = Greater Than (maior)<br>
+                        <strong>eq</strong> = EQual (igual)<br>
+                        <strong>le/ge</strong> = com "or Equal"</p>
+                    </div>
+                    <div class="content-box box-highlight">
+                        <h3>⬇️ Contagem Regressiva</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                            <span class="variable">N</span>=5<br>
+                            <span class="keyword">while</span> [ <span class="variable">$N</span> -gt 0 ]<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$N..."</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">N</span>=$(($N - 1))<br>
+                            <span class="keyword">done</span><br>
+                            <span class="command">echo</span> <span class="string">"🚀 Fim!"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Operações Matemáticas -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚡ Modificando Variáveis</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Use <strong>$(( ))</strong> para fazer matemática!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>➕ Operações Básicas</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="comment"># Somar 1</span><br>
+                            <span class="variable">N</span>=$(($N + 1))<br><br>
+                            <span class="comment"># Subtrair 1</span><br>
+                            <span class="variable">N</span>=$(($N - 1))<br><br>
+                            <span class="comment"># Multiplicar</span><br>
+                            <span class="variable">N</span>=$(($N * 2))<br><br>
+                            <span class="comment"># Dividir</span><br>
+                            <span class="variable">N</span>=$(($N / 2))
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>🔢 Somador</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                            <span class="variable">SOMA</span>=0<br>
+                            <span class="variable">N</span>=1<br><br>
+                            <span class="keyword">while</span> [ <span class="variable">$N</span> -le 5 ]<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">SOMA</span>=$(($SOMA + $N))<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Soma: $SOMA"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">N</span>=$(($N + 1))<br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="box-terminal" style="padding: 10px; font-size: 0.9em;">
+                        <span class="output">Soma: 1</span><br>
+                        <span class="output">Soma: 3</span><br>
+                        <span class="output">Soma: 6</span><br>
+                        <span class="output">Soma: 10</span><br>
+                        <span class="output">Soma: 15</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: While True -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">♾️ While True - Loop Infinito</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Loop que nunca para... até você mandar!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🔄 Estrutura</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">while</span> true<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;comandos<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ condição ]; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">break</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🛑 Comando BREAK</h3>
+                        <p><strong>break</strong> = saída de emergência!<br>
+                        Sai do loop imediatamente.</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>🎯 Exemplo Prático</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.85em;">
+                            <span class="keyword">while</span> true<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">read</span> -p <span class="string">"Digite (sair para parar): "</span> R<br><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ <span class="string">"$R"</span> = <span class="string">"sair"</span> ]; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Tchau!"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">break</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Você disse: $R"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-warning">
+                        <h3>⚠️ Cuidado!</h3>
+                        <p>Sempre tenha um <code>break</code>!<br>
+                        Caso contrário: Ctrl+C para sair.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Break e Continue -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎮 Break e Continue</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-warning">
+                        <h3>🛑 BREAK - Sai do Loop</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                            <span class="variable">N</span>=1<br>
+                            <span class="keyword">while</span> [ <span class="variable">$N</span> -le 10 ]<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ <span class="variable">$N</span> -eq 5 ]; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">break</span> <span class="comment"># Para aqui!</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$N"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">N</span>=$(($N + 1))<br>
+                            <span class="keyword">done</span>
+                        </div>
+                        <p style="margin-top: 10px;">Saída: 1 2 3 4 (para no 5)</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>⏭️ CONTINUE - Pula Volta</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                            <span class="variable">N</span>=0<br>
+                            <span class="keyword">while</span> [ <span class="variable">$N</span> -lt 5 ]<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">N</span>=$(($N + 1))<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ <span class="variable">$N</span> -eq 3 ]; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">continue</span> <span class="comment"># Pula!</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$N"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                        <p style="margin-top: 10px;">Saída: 1 2 4 5 (pula o 3)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 Diferença</h3>
+                <p><strong>break</strong> = sai do loop completamente | <strong>continue</strong> = pula só essa volta</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Entrada do Usuário -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">💬 Interação com Usuário</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📥 Comando READ</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="comment"># Básico</span><br>
+                            <span class="command">read</span> <span class="variable">NOME</span><br><br>
+                            <span class="comment"># Com pergunta</span><br>
+                            <span class="command">read</span> -p <span class="string">"Seu nome: "</span> <span class="variable">NOME</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🔢 Somador Interativo</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.85em;">
+                            <span class="variable">SOMA</span>=0<br><br>
+                            <span class="keyword">while</span> true<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">read</span> -p <span class="string">"Número (0=sair): "</span> <span class="variable">N</span><br><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ <span class="string">"$N"</span> = <span class="string">"0"</span> ]; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">break</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">SOMA</span>=$(($SOMA + $N))<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Total: $SOMA"</span><br>
+                            <span class="keyword">done</span><br><br>
+                            <span class="command">echo</span> <span class="string">"Soma final: $SOMA"</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>🎯 Jogo de Adivinhação</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.8em;">
+                            <span class="variable">SECRETO</span>=7<br>
+                            <span class="variable">TENT</span>=0<br><br>
+                            <span class="command">echo</span> <span class="string">"🎯 Adivinhe (1-10)!"</span><br><br>
+                            <span class="keyword">while</span> true<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">TENT</span>=$(($TENT + 1))<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">read</span> -p <span class="string">"Palpite: "</span> <span class="variable">P</span><br><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ <span class="variable">$P</span> -eq <span class="variable">$SECRETO</span> ]; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"🎉 Acertou em $TENT!"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">break</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">elif</span> [ <span class="variable">$P</span> -lt <span class="variable">$SECRETO</span> ]; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"📈 Maior!"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">else</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"📉 Menor!"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: Menu com WHILE -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🍔 Menu Interativo</h2>
+            <div class="box-terminal" style="font-size: 0.9em; line-height: 1.5;">
+                <span class="shebang">#!/bin/bash</span><br>
+                <span class="comment"># menu.sh - Menu interativo com WHILE</span><br><br>
+                <span class="keyword">while</span> true<br>
+                <span class="keyword">do</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">clear</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"╔═══════════════════════╗"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"║    MENU PRINCIPAL     ║"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"╠═══════════════════════╣"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"║  1) Ver data/hora     ║"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"║  2) Ver usuário       ║"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"║  3) Listar arquivos   ║"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"║  0) Sair              ║"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"╚═══════════════════════╝"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">read</span> -p <span class="string">"Opção: "</span> <span class="variable">OPC</span><br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">case</span> <span class="string">"$OPC"</span> <span class="keyword">in</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1) <span class="command">date</span> ;;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2) <span class="command">whoami</span> ;;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3) <span class="command">ls</span> -la ;;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0) <span class="command">echo</span> <span class="string">"Tchau!"</span>; <span class="keyword">break</span> ;;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*) <span class="command">echo</span> <span class="string">"Opção inválida!"</span> ;;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">esac</span><br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">read</span> -p <span class="string">"Pressione Enter..."</span><br>
+                <span class="keyword">done</span>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 Combinação Poderosa</h3>
+                <p><code>while true</code> + <code>case</code> + <code>break</code> = Menu perfeito!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Lendo Arquivos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📄 Lendo Arquivos Linha por Linha</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">WHILE + READ = Processar arquivos corretamente!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📝 Estrutura</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">while</span> <span class="command">read</span> <span class="variable">LINHA</span><br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$LINHA"</span><br>
+                            <span class="keyword">done</span> &lt; arquivo.txt
+                        </div>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>✅ Vantagem sobre FOR</h3>
+                        <p>FOR separa por espaços.<br>
+                        WHILE READ pega a linha inteira!<br><br>
+                        "Nome Completo" = 1 item ✓</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>🎯 Exemplo Prático</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.85em;">
+                            <span class="comment"># Arquivo: usuarios.txt</span><br>
+                            <span class="comment"># Ana Silva</span><br>
+                            <span class="comment"># Pedro Santos</span><br><br>
+                            <span class="variable">NUM</span>=1<br><br>
+                            <span class="keyword">while</span> <span class="command">read</span> <span class="variable">NOME</span><br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$NUM: $NOME"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">NUM</span>=$(($NUM + 1))<br>
+                            <span class="keyword">done</span> &lt; usuarios.txt
+                        </div>
+                    </div>
+                    <div class="box-terminal" style="padding: 10px; font-size: 0.9em;">
+                        <span class="output">1: Ana Silva</span><br>
+                        <span class="output">2: Pedro Santos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Projeto Prático -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🚀 Projeto: Contador de Palavras</h2>
+            <div class="box-terminal" style="font-size: 0.85em; line-height: 1.5;">
+                <span class="shebang">#!/bin/bash</span><br>
+                <span class="comment"># contador.sh - Conta palavras em frases</span><br><br>
+                <span class="command">echo</span> <span class="string">"📝 CONTADOR DE PALAVRAS"</span><br>
+                <span class="command">echo</span> <span class="string">"(Enter vazio para parar)"</span><br><br>
+                <span class="variable">TOTAL_FRASES</span>=0<br>
+                <span class="variable">TOTAL_PALAVRAS</span>=0<br><br>
+                <span class="keyword">while</span> true<br>
+                <span class="keyword">do</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">read</span> -p <span class="string">"Frase: "</span> <span class="variable">FRASE</span><br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ -z <span class="string">"$FRASE"</span> ]; <span class="keyword">then</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">break</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">PALAVRAS</span>=0<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> <span class="variable">P</span> <span class="keyword">in</span> <span class="variable">$FRASE</span>; <span class="keyword">do</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">PALAVRAS</span>=$(($PALAVRAS + 1))<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">done</span><br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">TOTAL_FRASES</span>=$(($TOTAL_FRASES + 1))<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">TOTAL_PALAVRAS</span>=$(($TOTAL_PALAVRAS + $PALAVRAS))<br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"✅ Frase $TOTAL_FRASES: $PALAVRAS palavras"</span><br>
+                <span class="keyword">done</span><br><br>
+                <span class="command">echo</span> <span class="string">"📊 Total: $TOTAL_FRASES frases, $TOTAL_PALAVRAS palavras"</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: FOR vs WHILE -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚖️ FOR vs WHILE</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🔁 Use FOR quando:</h3>
+                        <div class="bullet-point">Sabe quantas vezes repetir</div>
+                        <div class="bullet-point">Tem uma lista de itens</div>
+                        <div class="bullet-point">Processa arquivos com wildcard</div>
+                        <div class="bullet-point">Sequências numéricas simples</div>
+                    </div>
+                    <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                        <span class="comment"># FOR - lista conhecida</span><br>
+                        <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> 1 2 3 4 5<br>
+                        <span class="keyword">for</span> <span class="variable">arq</span> <span class="keyword">in</span> *.txt
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>🔄 Use WHILE quando:</h3>
+                        <div class="bullet-point">Não sabe quantas vezes</div>
+                        <div class="bullet-point">Depende de condição</div>
+                        <div class="bullet-point">Entrada do usuário</div>
+                        <div class="bullet-point">Ler arquivos linha por linha</div>
+                    </div>
+                    <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                        <span class="comment"># WHILE - condição</span><br>
+                        <span class="keyword">while</span> [ <span class="variable">$n</span> -lt 10 ]<br>
+                        <span class="keyword">while</span> <span class="command">read</span> <span class="variable">linha</span>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 Regra Simples</h3>
+                <p><strong>Lista de itens?</strong> → FOR | <strong>Condição para parar?</strong> → WHILE</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Arraste os conceitos para seus significados!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Finaliza o loop WHILE</div>
+                        <div class="drop-zone" data-correct="done">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Sai do loop imediatamente</div>
+                        <div class="drop-zone" data-correct="break">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Pula para próxima volta</div>
+                        <div class="drop-zone" data-correct="continue">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Menor ou igual</div>
+                        <div class="drop-zone" data-correct="-le">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Testa se string está vazia</div>
+                        <div class="drop-zone" data-correct="-z">Arraste aqui</div>
+                    </div>
+                </div>
+
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🔄</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Você completou a Aula 12!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Sintaxe do WHILE</div>
+                            <div class="bullet-point">Operadores (-lt, -le...)</div>
+                            <div class="bullet-point">While true + break</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">Break e Continue</div>
+                            <div class="bullet-point">Menus interativos</div>
+                            <div class="bullet-point">Ler arquivos linha a linha</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p><strong>Funções em Shell Script</strong> - Organize e reutilize seu código!</p>
+                </div>
+                <div class="content-box box-tip" style="max-width: 700px; margin-top: 20px;">
+                    <h3>💡 Lembre-se</h3>
+                    <p><code>while/do/done</code> | Sempre modifique a condição! | Use break para sair!</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: 'done', text: 'done' },
+            { id: 'break', text: 'break' },
+            { id: 'continue', text: 'continue' },
+            { id: '-le', text: '-le' },
+            { id: '-z', text: '-z' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            const shuffled = shuffleArray([...answersData]);
+            
+            shuffled.forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                
+                div.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                });
+                div.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                });
+                
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina WHILE!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom! Revise os erros.</p>';
+            else resultDiv.innerHTML += '<p>📚 Continue praticando!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+
+        initQuiz();
+    </script>
+</body>
+</html>

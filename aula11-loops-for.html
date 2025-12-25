@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 11 - Shell Script: Loops FOR</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+            --accent-orange: #f39c12;
+            --accent-cyan: #17a2b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            padding-bottom: 100px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.4em; }
+
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-tip { border-color: var(--accent-cyan); background: #e6fffa; }
+        
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .shebang { color: #f687b3; }
+        .box-terminal .string { color: #68d391; }
+        .box-terminal .variable { color: #fbd38d; }
+        .box-terminal .keyword { color: #f687b3; font-weight: bold; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+        .bullet-point {
+            display: flex;
+            align-items: flex-start;
+            margin: 10px 0;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "🔁";
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 10px; }
+        .command-card p { font-size: 0.9em; color: var(--text-light); }
+
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.95em;
+        }
+        .reference-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .reference-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .reference-table tr:hover { background: #f4f7fe; }
+        .reference-table code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+
+        .quiz-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; padding-bottom: 100px; min-height: 70vh; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn">
+                <span>←</span> Voltar
+            </a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 2 • Aula 11</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">🔁</div>
+                <h1 class="slide-title">Shell Script: Loops FOR</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Repetindo tarefas de forma inteligente!</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">for, do, done - Automação poderosa</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 500px;">
+                    <span class="keyword">for</span> <span class="variable">ARQUIVO</span> <span class="keyword">in</span> *.txt<br>
+                    <span class="keyword">do</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Processando: $ARQUIVO"</span><br>
+                    <span class="keyword">done</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Para cada item da lista, faça isso... Automação sem limite!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que são Loops? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎡 O que são Loops?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.3em;">Loop é como uma <strong>roda gigante</strong> - executa voltas até terminar!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🎯 Por que usar Loops?</h3>
+                        <div class="bullet-point">Evita repetir código</div>
+                        <div class="bullet-point">Processa listas de arquivos</div>
+                        <div class="bullet-point">Automatiza tarefas</div>
+                        <div class="bullet-point">Trabalha com sequências</div>
+                    </div>
+                    <div class="content-box box-warning">
+                        <h3>❌ Sem Loop (ruim)</h3>
+                        <div class="box-terminal" style="padding: 10px; font-size: 0.85em;">
+                            <span class="command">echo</span> <span class="string">"Arquivo1"</span><br>
+                            <span class="command">echo</span> <span class="string">"Arquivo2"</span><br>
+                            <span class="command">echo</span> <span class="string">"Arquivo3"</span><br>
+                            <span class="comment"># 50 linhas iguais!</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>✅ Com Loop (bom)</h3>
+                        <div class="box-terminal" style="padding: 10px; font-size: 0.85em;">
+                            <span class="keyword">for</span> <span class="variable">ARQ</span> <span class="keyword">in</span> arq1 arq2 arq3<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$ARQ"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>💡 O Princípio do FOR</h3>
+                        <p><strong>"Para cada item da lista, faça isso..."</strong></p>
+                        <p>Como dar a mesma instrução para cada pessoa de uma fila!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Sintaxe Básica -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📝 Sintaxe Básica do FOR</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🏗️ Estrutura</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">VARIAVEL</span> <span class="keyword">in</span> lista<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;comandos<br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-highlight">
+                        <h3>🔍 Cada Parte</h3>
+                        <p><strong>for</strong> = inicia o loop<br>
+                        <strong>VARIAVEL</strong> = recebe cada valor<br>
+                        <strong>in</strong> = "nos valores:"<br>
+                        <strong>do</strong> = "execute:"<br>
+                        <strong>done</strong> = fim do loop</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>🎯 Exemplo com Números</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">NUM</span> <span class="keyword">in</span> 1 2 3 4 5<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Número: $NUM"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                        <span class="output">Número: 1</span><br>
+                        <span class="output">Número: 2</span><br>
+                        <span class="output">Número: 3</span><br>
+                        <span class="output">Número: 4</span><br>
+                        <span class="output">Número: 5</span>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>⚠️ Regra</h3>
+                <p>Espaços separam itens: <code>a b c</code> = 3 itens | Sempre termine com <code>done</code>!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: FOR com Strings -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔤 FOR com Palavras (Strings)</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🍎 Exemplo: Lista de Frutas</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="shebang">#!/bin/bash</span><br><br>
+                            <span class="keyword">for</span> <span class="variable">FRUTA</span> <span class="keyword">in</span> maçã banana laranja<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Eu gosto de $FRUTA"</span><br>
+                            <span class="keyword">done</span><br><br>
+                            <span class="command">echo</span> <span class="string">"Fim!"</span>
+                        </div>
+                    </div>
+                    <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                        <span class="output">Eu gosto de maçã</span><br>
+                        <span class="output">Eu gosto de banana</span><br>
+                        <span class="output">Eu gosto de laranja</span><br>
+                        <span class="output">Fim!</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-success">
+                        <h3>👥 Exemplo: Lista de Nomes</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">NOME</span> <span class="keyword">in</span> Ana Pedro Maria<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Olá, $NOME!"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                        <span class="output">Olá, Ana!</span><br>
+                        <span class="output">Olá, Pedro!</span><br>
+                        <span class="output">Olá, Maria!</span>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>💡 Dica</h3>
+                        <p>Cada palavra separada por espaço vira um item!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: FOR com Wildcards -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🌟 FOR com Wildcards (Arquivos)</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Processe arquivos automaticamente com <strong>padrões</strong>!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📁 Processar todos os .txt</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">ARQ</span> <span class="keyword">in</span> *.txt<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Arquivo: $ARQ"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🃏 Wildcards Comuns</h3>
+                        <table class="reference-table">
+                            <tr><th>Padrão</th><th>Significado</th></tr>
+                            <tr><td><code>*.txt</code></td><td>Arquivos .txt</td></tr>
+                            <tr><td><code>foto*</code></td><td>Começam com "foto"</td></tr>
+                            <tr><td><code>*2024*</code></td><td>Contém "2024"</td></tr>
+                            <tr><td><code>*</code></td><td>Todos os arquivos</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>💾 Exemplo: Backup</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                            <span class="shebang">#!/bin/bash</span><br><br>
+                            <span class="command">mkdir</span> -p backup<br><br>
+                            <span class="keyword">for</span> <span class="variable">ARQ</span> <span class="keyword">in</span> *.txt<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Copiando $ARQ..."</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">cp</span> <span class="string">"$ARQ"</span> backup/<br>
+                            <span class="keyword">done</span><br><br>
+                            <span class="command">echo</span> <span class="string">"Backup completo!"</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-warning">
+                        <h3>⚠️ Sempre use aspas</h3>
+                        <p><code>"$ARQ"</code> protege nomes com espaços!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Sequências com Chaves -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔢 Sequências com Chaves { }</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Gere sequências <strong>rápidas</strong> sem comandos externos!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📐 Sintaxe das Chaves</h3>
+                        <table class="reference-table">
+                            <tr><th>Sintaxe</th><th>Resultado</th></tr>
+                            <tr><td><code>{1..5}</code></td><td>1 2 3 4 5</td></tr>
+                            <tr><td><code>{5..10}</code></td><td>5 6 7 8 9 10</td></tr>
+                            <tr><td><code>{A..E}</code></td><td>A B C D E</td></tr>
+                            <tr><td><code>{2..10..2}</code></td><td>2 4 6 8 10</td></tr>
+                        </table>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🎯 Exemplo: 1 a 5</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">N</span> <span class="keyword">in</span> {1..5}<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Número: $N"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>📁 Criar Pastas 2020-2024</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">ANO</span> <span class="keyword">in</span> {2020..2024}<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">mkdir</span> <span class="string">"pasta_$ANO"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Criada: pasta_$ANO"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>💡 Vantagem</h3>
+                        <p>Mais rápido e limpo que <code>seq</code>!<br>
+                        Funciona com letras: <code>{a..z}</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Comando seq -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔢 Comando seq</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Gerador de sequências numéricas!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📐 Sintaxes do seq</h3>
+                        <table class="reference-table">
+                            <tr><th>Comando</th><th>Resultado</th></tr>
+                            <tr><td><code>seq 5</code></td><td>1 2 3 4 5</td></tr>
+                            <tr><td><code>seq 3 7</code></td><td>3 4 5 6 7</td></tr>
+                            <tr><td><code>seq 2 2 10</code></td><td>2 4 6 8 10</td></tr>
+                            <tr><td><code>seq 10 -1 1</code></td><td>10 9 8...1</td></tr>
+                        </table>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🎯 Loop com seq</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">N</span> <span class="keyword">in</span> $(seq 1 5)<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Número: $N"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>⏰ Contagem Regressiva</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">N</span> <span class="keyword">in</span> $(seq 10 -1 1)<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$N..."</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">sleep</span> 1<br>
+                            <span class="keyword">done</span><br>
+                            <span class="command">echo</span> <span class="string">"🚀 LANÇAR!"</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>💡 $(comando)</h3>
+                        <p>Executa o comando e usa sua saída como lista!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: FOR Estilo C -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚙️ FOR Estilo C</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Sintaxe tradicional de programação!</p>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>🏗️ Estrutura</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> ((<span class="variable">i</span>=início; <span class="variable">i</span><=fim; <span class="variable">i</span>++))<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;comandos<br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🎯 Exemplo: 1 a 5</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> ((<span class="variable">i</span>=1; <span class="variable">i</span><=5; <span class="variable">i</span>++))<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Número: $i"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-highlight">
+                        <h3>📊 Operadores</h3>
+                        <table class="reference-table">
+                            <tr><th>Operador</th><th>Significado</th></tr>
+                            <tr><td><code>i++</code></td><td>Incrementa 1</td></tr>
+                            <tr><td><code>i--</code></td><td>Decrementa 1</td></tr>
+                            <tr><td><code>i+=2</code></td><td>Incrementa 2</td></tr>
+                            <tr><td><code>i*=2</code></td><td>Multiplica por 2</td></tr>
+                        </table>
+                    </div>
+                    <div class="content-box box-tip">
+                        <h3>🔢 Números Pares</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                            <span class="keyword">for</span> ((<span class="variable">i</span>=2; <span class="variable">i</span><=10; <span class="variable">i</span>+=2))<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Par: $i"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: FOR com Arquivo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📄 FOR com Conteúdo de Arquivo</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-info">
+                        <h3>📝 Preparando o Arquivo</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="prompt">$</span> <span class="command">cat</span> nomes.txt<br>
+                            <span class="output">Ana</span><br>
+                            <span class="output">Pedro</span><br>
+                            <span class="output">Maria</span>
+                        </div>
+                    </div>
+                    <div class="content-box box-success">
+                        <h3>🔄 Loop com cat</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                            <span class="keyword">for</span> <span class="variable">NOME</span> <span class="keyword">in</span> $(cat nomes.txt)<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"Olá, $NOME!"</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                        <span class="output">Olá, Ana!</span><br>
+                        <span class="output">Olá, Pedro!</span><br>
+                        <span class="output">Olá, Maria!</span>
+                    </div>
+                    <div class="content-box box-highlight">
+                        <h3>🌐 Testar Sites</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.85em;">
+                            <span class="keyword">for</span> <span class="variable">SITE</span> <span class="keyword">in</span> $(cat sites.txt)<br>
+                            <span class="keyword">do</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> ping -c 1 <span class="string">"$SITE"</span> &gt;/dev/null; <span class="keyword">then</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"✅ $SITE OK"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">else</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"❌ $SITE FALHOU"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br>
+                            <span class="keyword">done</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <h3>⚠️ Cuidado</h3>
+                <p>FOR separa por espaços! "Nome Completo" vira dois itens. Para linhas inteiras, use <code>while read</code>.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Exemplo Prático - Renomeador -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🚀 Projeto: Renomeador de Fotos</h2>
+            <div class="box-terminal" style="font-size: 0.9em; line-height: 1.5;">
+                <span class="shebang">#!/bin/bash</span><br>
+                <span class="comment"># renomeador.sh - Renomeia fotos em sequência</span><br><br>
+                <span class="command">echo</span> <span class="string">"📸 RENOMEADOR DE FOTOS"</span><br>
+                <span class="command">echo</span> <span class="string">"====================="</span><br><br>
+                <span class="variable">CONTADOR</span>=1<br><br>
+                <span class="keyword">for</span> <span class="variable">FOTO</span> <span class="keyword">in</span> *.jpg *.png<br>
+                <span class="keyword">do</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Verificar se arquivo existe</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> [ -f <span class="string">"$FOTO"</span> ]; <span class="keyword">then</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Pegar extensão</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">EXT</span>="${FOTO##*.}"<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">NOVO</span>=<span class="string">"foto_${CONTADOR}.$EXT"</span><br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">mv</span> <span class="string">"$FOTO"</span> <span class="string">"$NOVO"</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="command">echo</span> <span class="string">"$FOTO → $NOVO"</span><br><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">CONTADOR</span>=$(($CONTADOR + 1))<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">fi</span><br>
+                <span class="keyword">done</span><br><br>
+                <span class="command">echo</span> <span class="string">"✅ $(($CONTADOR - 1)) fotos renomeadas!"</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-success">
+                    <h3>🎯 O que faz</h3>
+                    <p>img_001.jpg → foto_1.jpg<br>
+                    DSC_002.png → foto_2.png<br>
+                    E assim por diante!</p>
+                </div>
+                <div class="content-box box-tip">
+                    <h3>💡 Conceitos Usados</h3>
+                    <p>Wildcards, variáveis, incremento, if para validar</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Boas Práticas -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">💡 Boas Práticas</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="content-box box-success">
+                        <h3>✅ Faça Isso</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.85em;">
+                            <span class="comment"># Nomes descritivos</span><br>
+                            <span class="keyword">for</span> <span class="variable">ARQUIVO_TEXTO</span> <span class="keyword">in</span> *.txt<br><br>
+                            <span class="comment"># Sempre use aspas</span><br>
+                            <span class="command">cp</span> <span class="string">"$ARQUIVO"</span> backup/<br><br>
+                            <span class="comment"># Verifique se existe</span><br>
+                            <span class="keyword">if</span> [ -f <span class="string">"$ARQ"</span> ]; <span class="keyword">then</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="content-box box-warning">
+                        <h3>❌ Evite Isso</h3>
+                        <div class="box-terminal" style="padding: 15px; font-size: 0.85em;">
+                            <span class="comment"># Nomes genéricos</span><br>
+                            <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> *.txt<br><br>
+                            <span class="comment"># Sem aspas (quebra)</span><br>
+                            <span class="command">cp</span> $ARQUIVO backup/<br><br>
+                            <span class="comment"># Assumir que existe</span><br>
+                            <span class="command">cat</span> $ARQ
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>🎯 Checklist</h3>
+                <p>✅ Nomes descritivos | ✅ Aspas em variáveis | ✅ Verificar se arquivo existe | ✅ Testar antes de rodar!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Resumo Sintaxes -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo das Sintaxes</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">for i in lista</div>
+                    <h4>Lista Manual</h4>
+                    <p>Itens separados por espaço</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">for i in *.txt</div>
+                    <h4>Wildcards</h4>
+                    <p>Padrões de arquivos</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">for i in {1..10}</div>
+                    <h4>Chaves</h4>
+                    <p>Sequências rápidas</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">for i in $(seq 1 10)</div>
+                    <h4>Comando seq</h4>
+                    <p>Sequências flexíveis</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">for ((i=1;i<=10;i++))</div>
+                    <h4>Estilo C</h4>
+                    <p>Controle preciso</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">for i in $(cat arq)</div>
+                    <h4>De Arquivo</h4>
+                    <p>Palavras do arquivo</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Arraste as sintaxes para seus usos!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Números de 1 a 10 (rápido)</div>
+                        <div class="drop-zone" data-correct="{1..10}">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Todos os arquivos .txt</div>
+                        <div class="drop-zone" data-correct="*.txt">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Finaliza o loop FOR</div>
+                        <div class="drop-zone" data-correct="done">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Incrementa variável</div>
+                        <div class="drop-zone" data-correct="i++">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Executa comando e usa saída</div>
+                        <div class="drop-zone" data-correct="$(comando)">Arraste aqui</div>
+                    </div>
+                </div>
+
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🔁</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Você completou a Aula 11!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Sintaxe básica do FOR</div>
+                            <div class="bullet-point">Loops com listas</div>
+                            <div class="bullet-point">Wildcards para arquivos</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">Sequências {1..10}</div>
+                            <div class="bullet-point">Comando seq</div>
+                            <div class="bullet-point">Sintaxe estilo C</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p><strong>Loops WHILE</strong> - Repetir enquanto condição for verdadeira!</p>
+                </div>
+                <div class="content-box box-tip" style="max-width: 700px; margin-top: 20px;">
+                    <h3>💡 Lembre-se</h3>
+                    <p><code>for/do/done</code> | Aspas em variáveis | Verificar arquivos!</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: '{1..10}', text: '{1..10}' },
+            { id: '*.txt', text: '*.txt' },
+            { id: 'done', text: 'done' },
+            { id: 'i++', text: 'i++' },
+            { id: '$(comando)', text: '$(comando)' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            const shuffled = shuffleArray([...answersData]);
+            
+            shuffled.forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                
+                div.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                });
+                div.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                });
+                
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina FOR!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom! Revise os erros.</p>';
+            else resultDiv.innerHTML += '<p>📚 Continue praticando!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+
+        initQuiz();
+    </script>
+</body>
+</html>
