@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 06 - Permissões de Arquivos</title>
+    <style>
+        /* --- VARIÁVEIS GLOBAIS --- */
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+            --accent-orange: #f39c12;
+            --accent-cyan: #17a2b8;
+        }
+
+        /* --- RESET E BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- HEADER DA SALA DE AULA --- */
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        /* --- CONTAINER PRINCIPAL --- */
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            padding-bottom: 100px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ESTILOS DO CONTEÚDO --- */
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.5em; }
+
+        /* Boxes de Conteúdo */
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-tip { border-color: var(--accent-cyan); background: #e6fffa; }
+        
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .root-prompt { color: #fc8181; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .box-terminal .perm-r { color: #48bb78; }
+        .box-terminal .perm-w { color: #f6ad55; }
+        .box-terminal .perm-x { color: #fc8181; }
+        .box-terminal .perm-d { color: #63b3ed; }
+
+        /* Layouts de Colunas */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; }
+
+        .bullet-point {
+            display: flex;
+            align-items: flex-start;
+            margin: 10px 0;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "🔐";
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        /* Cards de Comando */
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.5em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 10px; }
+        .command-card p { font-size: 0.9em; color: var(--text-light); }
+
+        /* Ícones de Permissão */
+        .perm-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            margin: 0 auto 15px;
+        }
+        .perm-read { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .perm-write { background: linear-gradient(135deg, #f6ad55, #ed8936); }
+        .perm-execute { background: linear-gradient(135deg, #fc8181, #f56565); }
+        .perm-none { background: linear-gradient(135deg, #a0aec0, #718096); }
+
+        /* Tabela de Referência */
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 1em;
+        }
+        .reference-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .reference-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .reference-table tr:hover {
+            background: #f4f7fe;
+        }
+        .reference-table code {
+            background: #e2e8f0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Visualização de Permissões */
+        .perm-display {
+            font-family: 'Courier New', monospace;
+            font-size: 2em;
+            text-align: center;
+            padding: 20px;
+            background: #1a202c;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+        .perm-display .type { color: #63b3ed; }
+        .perm-display .owner { color: #48bb78; }
+        .perm-display .group { color: #f6ad55; }
+        .perm-display .others { color: #fc8181; }
+
+        /* Diagrama de Permissões */
+        .perm-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .perm-block {
+            padding: 15px 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            min-width: 100px;
+        }
+
+        /* Calculadora Visual */
+        .calc-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+        }
+        .calc-label {
+            width: 100px;
+            font-weight: bold;
+        }
+        .calc-perms {
+            display: flex;
+            gap: 10px;
+        }
+        .calc-perm {
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .calc-result {
+            margin-left: auto;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* --- CONTROLES DE NAVEGAÇÃO --- */
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+
+        /* --- DRAG AND DROP QUIZ --- */
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .question-text { font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+
+        .quiz-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; padding-bottom: 100px; min-height: 70vh; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .perm-display { font-size: 1.2em; }
+            .perm-diagram { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn">
+                <span>←</span> Voltar
+            </a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 06</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">22</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">🔐</div>
+                <h1 class="slide-title">Permissões de Arquivos</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Controle quem acessa o quê (rwx)</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Comandos chmod, chown e grupos!</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 600px;">
+                    <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -l arquivo.txt</span><br>
+                    <span class="output">-<span class="perm-r">r</span><span class="perm-w">w</span><span class="perm-x">x</span><span class="perm-r">r</span>-<span class="perm-x">x</span><span class="perm-r">r</span>-- 1 usuario grupo 1234 Jan 15 arquivo.txt</span><br>
+                    <span class="comment"># Quem pode ler, escrever e executar? 🤔</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Segurança começa com permissões bem configuradas!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: Por que Permissões? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 Por que Permissões Existem?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.3em;"><strong>Segurança = Controle de Acesso</strong></p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🏢 Analogia: Escritório</h3>
+                    <div class="bullet-point">Nem todo mundo pode entrar em todas as salas</div>
+                    <div class="bullet-point">Documentos confidenciais ficam trancados</div>
+                    <div class="bullet-point">Cada funcionário tem seu crachá</div>
+                    <div class="bullet-point">Gerentes têm mais acesso que estagiários</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>💻 No Linux</h3>
+                    <div class="bullet-point">Cada arquivo tem um "dono"</div>
+                    <div class="bullet-point">Usuários pertencem a "grupos"</div>
+                    <div class="bullet-point">3 tipos de acesso: ler, escrever, executar</div>
+                    <div class="bullet-point">Root pode tudo (é o "chefão")</div>
+                </div>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚠️ Sem permissões...</h3>
+                <div class="bullet-point">Qualquer usuário poderia apagar arquivos do sistema</div>
+                <div class="bullet-point">Dados pessoais ficariam expostos</div>
+                <div class="bullet-point">Vírus teriam acesso total ao computador</div>
+                <div class="bullet-point">Seria impossível ter múltiplos usuários com segurança</div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Os 3 Tipos de Permissão -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📝 Os 3 Tipos de Permissão: RWX</h2>
+            <div class="grid-3">
+                <div class="content-box box-success" style="text-align: center;">
+                    <div class="perm-icon perm-read">📖</div>
+                    <h3 style="color: #27ae60;">Read (r)</h3>
+                    <p style="font-size: 1.2em;"><strong>Leitura</strong></p>
+                    <p>Pode ver o conteúdo do arquivo</p>
+                    <div style="margin-top: 15px; font-family: monospace; font-size: 1.5em;">4</div>
+                </div>
+                <div class="content-box box-highlight" style="text-align: center;">
+                    <div class="perm-icon perm-write">✏️</div>
+                    <h3 style="color: #e67e22;">Write (w)</h3>
+                    <p style="font-size: 1.2em;"><strong>Escrita</strong></p>
+                    <p>Pode modificar o arquivo</p>
+                    <div style="margin-top: 15px; font-family: monospace; font-size: 1.5em;">2</div>
+                </div>
+                <div class="content-box box-warning" style="text-align: center;">
+                    <div class="perm-icon perm-execute">⚡</div>
+                    <h3 style="color: #c0392b;">Execute (x)</h3>
+                    <p style="font-size: 1.2em;"><strong>Execução</strong></p>
+                    <p>Pode rodar como programa</p>
+                    <div style="margin-top: 15px; font-family: monospace; font-size: 1.5em;">1</div>
+                </div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 20px;">
+                <h3>💡 Para Diretórios é Diferente!</h3>
+                <table class="reference-table">
+                    <tr><th>Permissão</th><th>Em Arquivo</th><th>Em Diretório</th></tr>
+                    <tr><td><code>r</code> (read)</td><td>Ler conteúdo</td><td>Listar arquivos (ls)</td></tr>
+                    <tr><td><code>w</code> (write)</td><td>Modificar conteúdo</td><td>Criar/deletar arquivos dentro</td></tr>
+                    <tr><td><code>x</code> (execute)</td><td>Executar programa</td><td>Entrar no diretório (cd)</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Os 3 Níveis de Usuário -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👥 Os 3 Níveis de Usuário</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Cada arquivo define permissões para <strong>3 categorias</strong> de usuários</p>
+            </div>
+            <div class="grid-3">
+                <div class="content-box box-success" style="text-align: center;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">👤</div>
+                    <h3 style="color: #27ae60;">Owner (u)</h3>
+                    <p style="font-size: 1.1em;"><strong>Dono</strong></p>
+                    <p>Quem criou o arquivo</p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Primeiro bloco de rwx</p>
+                </div>
+                <div class="content-box box-highlight" style="text-align: center;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">👥</div>
+                    <h3 style="color: #e67e22;">Group (g)</h3>
+                    <p style="font-size: 1.1em;"><strong>Grupo</strong></p>
+                    <p>Membros do grupo do arquivo</p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Segundo bloco de rwx</p>
+                </div>
+                <div class="content-box box-info" style="text-align: center;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">🌍</div>
+                    <h3 style="color: var(--primary);">Others (o)</h3>
+                    <p style="font-size: 1.1em;"><strong>Outros</strong></p>
+                    <p>Todos os demais usuários</p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Terceiro bloco de rwx</p>
+                </div>
+            </div>
+            <div class="perm-display" style="margin-top: 30px;">
+                <span class="type">-</span><span class="owner">rwx</span><span class="group">r-x</span><span class="others">r--</span>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 30px; margin-top: 10px;">
+                <span style="color: #63b3ed;">Tipo</span>
+                <span style="color: #48bb78;">Dono</span>
+                <span style="color: #f6ad55;">Grupo</span>
+                <span style="color: #fc8181;">Outros</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Lendo Permissões com ls -l -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👁️ Lendo Permissões com ls -l</h2>
+            <div class="box-terminal">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -l</span><br>
+                <span class="output"><span class="perm-d">d</span><span class="perm-r">r</span><span class="perm-w">w</span><span class="perm-x">x</span><span class="perm-r">r</span>-<span class="perm-x">x</span><span class="perm-r">r</span>-<span class="perm-x">x</span>  2 usuario grupo 4096 Jan 15 Documentos</span><br>
+                <span class="output">-<span class="perm-r">r</span><span class="perm-w">w</span>-<span class="perm-r">r</span>--<span class="perm-r">r</span>--  1 usuario grupo 1234 Jan 15 arquivo.txt</span><br>
+                <span class="output">-<span class="perm-r">r</span><span class="perm-w">w</span><span class="perm-x">x</span><span class="perm-r">r</span>-<span class="perm-x">x</span>---  1 usuario grupo 5678 Jan 15 script.sh</span><br>
+                <span class="output">l<span class="perm-r">r</span><span class="perm-w">w</span><span class="perm-x">x</span><span class="perm-r">r</span><span class="perm-w">w</span><span class="perm-x">x</span><span class="perm-r">r</span><span class="perm-w">w</span><span class="perm-x">x</span>  1 usuario grupo   12 Jan 15 link -> arquivo.txt</span>
+            </div>
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>🔍 Decifrando cada parte</h3>
+                <table class="reference-table">
+                    <tr><th>Posição</th><th>Significado</th><th>Valores</th></tr>
+                    <tr><td>1º caractere</td><td>Tipo do arquivo</td><td><code>-</code>=arquivo, <code>d</code>=diretório, <code>l</code>=link</td></tr>
+                    <tr><td>2º-4º</td><td>Permissões do DONO</td><td><code>rwx</code> ou <code>---</code></td></tr>
+                    <tr><td>5º-7º</td><td>Permissões do GRUPO</td><td><code>rwx</code> ou <code>---</code></td></tr>
+                    <tr><td>8º-10º</td><td>Permissões de OUTROS</td><td><code>rwx</code> ou <code>---</code></td></tr>
+                </table>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 Dica: O traço (-) significa "sem permissão"</h3>
+                <p><code>r--</code> = só leitura | <code>rw-</code> = leitura e escrita | <code>rwx</code> = acesso total</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Sistema Octal -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔢 Sistema Octal (Numérico)</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Cada permissão tem um <strong>valor numérico</strong>!</p>
+            </div>
+            <div class="grid-3">
+                <div class="content-box box-success" style="text-align: center;">
+                    <h3 style="font-size: 2em; margin-bottom: 10px;">4</h3>
+                    <p style="font-size: 1.3em;"><strong>r</strong> (read)</p>
+                    <p>Leitura</p>
+                </div>
+                <div class="content-box box-highlight" style="text-align: center;">
+                    <h3 style="font-size: 2em; margin-bottom: 10px;">2</h3>
+                    <p style="font-size: 1.3em;"><strong>w</strong> (write)</p>
+                    <p>Escrita</p>
+                </div>
+                <div class="content-box box-warning" style="text-align: center;">
+                    <h3 style="font-size: 2em; margin-bottom: 10px;">1</h3>
+                    <p style="font-size: 1.3em;"><strong>x</strong> (execute)</p>
+                    <p>Execução</p>
+                </div>
+            </div>
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>📊 Somando os valores</h3>
+                <div class="calc-row">
+                    <span class="calc-label">rwx =</span>
+                    <div class="calc-perms">
+                        <span class="calc-perm" style="background: #d1fae5;">r=4</span>
+                        <span>+</span>
+                        <span class="calc-perm" style="background: #fef3c7;">w=2</span>
+                        <span>+</span>
+                        <span class="calc-perm" style="background: #fee2e2;">x=1</span>
+                    </div>
+                    <span class="calc-result">= 7</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">rw- =</span>
+                    <div class="calc-perms">
+                        <span class="calc-perm" style="background: #d1fae5;">r=4</span>
+                        <span>+</span>
+                        <span class="calc-perm" style="background: #fef3c7;">w=2</span>
+                        <span>+</span>
+                        <span class="calc-perm" style="background: #e2e8f0;">-=0</span>
+                    </div>
+                    <span class="calc-result">= 6</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">r-x =</span>
+                    <div class="calc-perms">
+                        <span class="calc-perm" style="background: #d1fae5;">r=4</span>
+                        <span>+</span>
+                        <span class="calc-perm" style="background: #e2e8f0;">-=0</span>
+                        <span>+</span>
+                        <span class="calc-perm" style="background: #fee2e2;">x=1</span>
+                    </div>
+                    <span class="calc-result">= 5</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Tabela de Permissões Octais -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Tabela de Referência Octal</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🔢 Valores Individuais</h3>
+                    <table class="reference-table">
+                        <tr><th>Octal</th><th>Binário</th><th>Permissão</th></tr>
+                        <tr><td>0</td><td>000</td><td><code>---</code> (nenhuma)</td></tr>
+                        <tr><td>1</td><td>001</td><td><code>--x</code> (executar)</td></tr>
+                        <tr><td>2</td><td>010</td><td><code>-w-</code> (escrever)</td></tr>
+                        <tr><td>3</td><td>011</td><td><code>-wx</code> (escrever+executar)</td></tr>
+                        <tr><td>4</td><td>100</td><td><code>r--</code> (ler)</td></tr>
+                        <tr><td>5</td><td>101</td><td><code>r-x</code> (ler+executar)</td></tr>
+                        <tr><td>6</td><td>110</td><td><code>rw-</code> (ler+escrever)</td></tr>
+                        <tr><td>7</td><td>111</td><td><code>rwx</code> (todas)</td></tr>
+                    </table>
+                </div>
+                <div class="content-box box-success">
+                    <h3>⭐ Combinações Comuns</h3>
+                    <table class="reference-table">
+                        <tr><th>Octal</th><th>Significado</th></tr>
+                        <tr><td><code>755</code></td><td>Padrão para executáveis e diretórios</td></tr>
+                        <tr><td><code>644</code></td><td>Padrão para arquivos comuns</td></tr>
+                        <tr><td><code>700</code></td><td>Só o dono acessa</td></tr>
+                        <tr><td><code>777</code></td><td>Todos podem tudo (perigoso!)</td></tr>
+                        <tr><td><code>600</code></td><td>Arquivo privado (ex: chaves SSH)</td></tr>
+                        <tr><td><code>750</code></td><td>Dono total, grupo lê/executa</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 Memorize: 755 e 644</h3>
+                <p><strong>755</strong> = rwxr-xr-x (diretórios e scripts)</p>
+                <p><strong>644</strong> = rw-r--r-- (documentos e configs)</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Comando chmod - Modo Simbólico -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 chmod - Modo Simbólico</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;"><strong>chmod</strong> = Change Mode (mudar permissões)</p>
+            </div>
+            <div class="content-box box-info">
+                <h3>📝 Sintaxe Simbólica</h3>
+                <p style="font-family: monospace; font-size: 1.3em; text-align: center; margin: 15px 0;">
+                    chmod <strong>[quem][operador][permissão]</strong> arquivo
+                </p>
+                <div class="grid-3" style="margin-top: 15px;">
+                    <div>
+                        <strong>Quem:</strong>
+                        <p><code>u</code> = user (dono)</p>
+                        <p><code>g</code> = group</p>
+                        <p><code>o</code> = others</p>
+                        <p><code>a</code> = all (todos)</p>
+                    </div>
+                    <div>
+                        <strong>Operador:</strong>
+                        <p><code>+</code> = adicionar</p>
+                        <p><code>-</code> = remover</p>
+                        <p><code>=</code> = definir exato</p>
+                    </div>
+                    <div>
+                        <strong>Permissão:</strong>
+                        <p><code>r</code> = read</p>
+                        <p><code>w</code> = write</p>
+                        <p><code>x</code> = execute</p>
+                    </div>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Adicionar execução para o dono</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod u+x script.sh</span><br><br>
+                
+                <span class="comment"># Remover escrita do grupo e outros</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod go-w documento.txt</span><br><br>
+                
+                <span class="comment"># Definir permissão exata para todos</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod a=r arquivo.txt</span><br><br>
+                
+                <span class="comment"># Múltiplas mudanças de uma vez</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod u+rwx,g+rx,o-rwx programa</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: Comando chmod - Modo Octal -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 chmod - Modo Octal</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Modo octal é mais <strong>rápido</strong> e <strong>direto</strong>!</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Sintaxe: chmod NNN arquivo</span><br>
+                <span class="comment"># Onde NNN = dono-grupo-outros</span><br><br>
+                
+                <span class="comment"># Permissão padrão para arquivo (rw-r--r--)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 644 arquivo.txt</span><br><br>
+                
+                <span class="comment"># Permissão para script (rwxr-xr-x)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 755 script.sh</span><br><br>
+                
+                <span class="comment"># Só o dono acessa (rwx------)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 700 pasta_privada</span><br><br>
+                
+                <span class="comment"># Arquivo secreto (rw-------)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 600 chave_ssh</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-success">
+                    <h3>✅ Vantagens do Octal</h3>
+                    <div class="bullet-point">Define TUDO de uma vez</div>
+                    <div class="bullet-point">Mais curto de digitar</div>
+                    <div class="bullet-point">Padrão em scripts</div>
+                </div>
+                <div class="content-box box-info">
+                    <h3>✅ Vantagens do Simbólico</h3>
+                    <div class="bullet-point">Mais intuitivo para iniciantes</div>
+                    <div class="bullet-point">Modifica só o necessário</div>
+                    <div class="bullet-point">Mais legível em scripts</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: chmod Recursivo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📁 chmod Recursivo (-R)</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Aplicar permissões em <strong>toda uma pasta</strong> e seu conteúdo</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Aplicar 755 em tudo dentro de /var/www</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod -R 755 /var/www</span><br><br>
+                
+                <span class="comment"># Adicionar leitura para todos, recursivamente</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod -R a+r documentos/</span><br><br>
+                
+                <span class="comment"># Remover execução de arquivos (manter em diretórios)</span><br>
+                <span class="comment"># Cuidado! Isso pode quebrar coisas...</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod -R a-x pasta/</span>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚠️ Cuidado com -R!</h3>
+                <div class="bullet-point">Não use em diretórios do sistema (/, /etc, /bin)</div>
+                <div class="bullet-point">Verifique DUAS VEZES antes de executar</div>
+                <div class="bullet-point">chmod -R 777 é quase sempre ERRADO e perigoso!</div>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 Dica: Separar arquivos de diretórios</h3>
+                <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                    <span class="comment"># 755 só para diretórios</span><br>
+                    <span class="command">find pasta/ -type d -exec chmod 755 {} \;</span><br><br>
+                    <span class="comment"># 644 só para arquivos</span><br>
+                    <span class="command">find pasta/ -type f -exec chmod 644 {} \;</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Comando chown -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👤 chown - Mudar Dono e Grupo</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;"><strong>chown</strong> = Change Owner (mudar proprietário)</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Mudar dono do arquivo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chown maria arquivo.txt</span><br><br>
+                
+                <span class="comment"># Mudar dono e grupo</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chown maria:desenvolvedores arquivo.txt</span><br><br>
+                
+                <span class="comment"># Mudar só o grupo (duas formas)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chown :webteam site/</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chgrp webteam site/</span><br><br>
+                
+                <span class="comment"># Recursivo (-R)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chown -R www-data:www-data /var/www/html</span>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>📝 Sintaxes</h3>
+                    <p><code>chown usuario arquivo</code></p>
+                    <p><code>chown usuario:grupo arquivo</code></p>
+                    <p><code>chown :grupo arquivo</code></p>
+                    <p><code>chgrp grupo arquivo</code></p>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>⚠️ Importante</h3>
+                    <p>Só <strong>root</strong> pode mudar o dono de arquivos!</p>
+                    <p style="margin-top: 10px;">Usuário comum só pode mudar o grupo para grupos dos quais faz parte.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Grupos no Linux -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👥 Trabalhando com Grupos</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Grupos permitem compartilhar acesso entre usuários!</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Ver grupos do usuário atual</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">groups</span><br>
+                <span class="output">usuario sudo docker www-data</span><br><br>
+                
+                <span class="comment"># Ver grupos de outro usuário</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">groups maria</span><br>
+                <span class="output">maria : maria desenvolvedores</span><br><br>
+                
+                <span class="comment"># Ver detalhes com id</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">id</span><br>
+                <span class="output">uid=1000(usuario) gid=1000(usuario) groups=1000(usuario),27(sudo),999(docker)</span><br><br>
+                
+                <span class="comment"># Listar todos os grupos do sistema</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /etc/group</span>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 20px;">
+                <h3>💡 Gerenciando Grupos (como root)</h3>
+                <div class="box-terminal" style="padding: 15px; font-size: 0.95em;">
+                    <span class="comment"># Criar novo grupo</span><br>
+                    <span class="root-prompt">root</span>:~# <span class="command">groupadd desenvolvedores</span><br><br>
+                    <span class="comment"># Adicionar usuário ao grupo</span><br>
+                    <span class="root-prompt">root</span>:~# <span class="command">usermod -aG desenvolvedores maria</span><br><br>
+                    <span class="comment"># Remover usuário do grupo</span><br>
+                    <span class="root-prompt">root</span>:~# <span class="command">gpasswd -d maria desenvolvedores</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: umask -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎭 umask - Permissões Padrão</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;"><strong>umask</strong> define as permissões padrão para novos arquivos!</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🤔 Como funciona?</h3>
+                    <p>umask é uma <strong>máscara de subtração</strong>:</p>
+                    <p style="font-family: monospace; margin: 15px 0; font-size: 1.1em;">
+                        Permissão Base - umask = Permissão Final
+                    </p>
+                    <p><strong>Base para arquivos:</strong> 666 (rw-rw-rw-)</p>
+                    <p><strong>Base para diretórios:</strong> 777 (rwxrwxrwx)</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>📊 Exemplo com umask 022</h3>
+                    <p><strong>Arquivo:</strong></p>
+                    <p style="font-family: monospace;">666 - 022 = 644 (rw-r--r--)</p>
+                    <p style="margin-top: 10px;"><strong>Diretório:</strong></p>
+                    <p style="font-family: monospace;">777 - 022 = 755 (rwxr-xr-x)</p>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Ver umask atual</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">umask</span><br>
+                <span class="output">0022</span><br><br>
+                
+                <span class="comment"># Ver em formato simbólico</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">umask -S</span><br>
+                <span class="output">u=rwx,g=rx,o=rx</span><br><br>
+                
+                <span class="comment"># Mudar umask temporariamente</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">umask 077</span> <span class="comment"># Arquivos: 600, Diretórios: 700</span>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 15px;">
+                <h3>💡 umasks Comuns</h3>
+                <p><code>022</code> = Padrão (arquivos 644, dirs 755)</p>
+                <p><code>027</code> = Mais restritivo (arquivos 640, dirs 750)</p>
+                <p><code>077</code> = Privado (arquivos 600, dirs 700)</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 14: Permissões Especiais - SUID -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚡ Permissões Especiais: SUID</h2>
+            <div class="content-box box-warning" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;"><strong>SUID</strong> = Set User ID (Executar como dono)</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🤔 O que é SUID?</h3>
+                    <p>Quando um arquivo tem SUID, ele executa com as permissões do <strong>dono</strong>, não do usuário que o executou.</p>
+                    <p style="margin-top: 15px;"><strong>Exemplo clássico:</strong> o comando <code>passwd</code></p>
+                    <p>Usuários comuns podem mudar sua própria senha, mas o arquivo /etc/shadow só root pode editar!</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>📝 Como identificar</h3>
+                    <p>Aparece um <strong>s</strong> no lugar do <strong>x</strong> do dono:</p>
+                    <div class="perm-display" style="font-size: 1.5em; padding: 15px;">
+                        -rw<span style="color: #fc8181; font-weight: bold;">s</span>r-xr-x
+                    </div>
+                    <p style="margin-top: 10px;">Valor octal: <strong>4</strong>xxx</p>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Ver arquivos SUID no sistema</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -l /usr/bin/passwd</span><br>
+                <span class="output">-rw<span class="highlight">s</span>r-xr-x 1 root root 68208 Jan 15 /usr/bin/passwd</span><br><br>
+                
+                <span class="comment"># Adicionar SUID</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chmod u+s programa</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chmod 4755 programa</span>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <h3>⚠️ Cuidado!</h3>
+                <p>SUID é um risco de segurança se mal usado. Nunca coloque em scripts!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 15: Permissões Especiais - SGID -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚡ Permissões Especiais: SGID</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;"><strong>SGID</strong> = Set Group ID</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📂 Em Diretórios (mais comum)</h3>
+                    <p>Arquivos criados dentro herdam o <strong>grupo do diretório</strong>, não do usuário.</p>
+                    <p style="margin-top: 15px;"><strong>Uso:</strong> Pastas compartilhadas entre equipes!</p>
+                    <div class="box-terminal" style="padding: 15px; font-size: 0.9em; margin-top: 10px;">
+                        <span class="comment"># Pasta da equipe</span><br>
+                        <span class="command">chmod g+s /projetos/equipe/</span>
+                    </div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>📄 Em Arquivos</h3>
+                    <p>Executa com as permissões do <strong>grupo</strong> do arquivo.</p>
+                    <p style="margin-top: 15px;">Menos comum que SUID.</p>
+                    <div class="perm-display" style="font-size: 1.3em; padding: 15px;">
+                        -rwxr-<span style="color: #f6ad55; font-weight: bold;">s</span>r-x
+                    </div>
+                    <p style="margin-top: 10px;">Valor octal: <strong>2</strong>xxx</p>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Criar diretório compartilhado com SGID</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">mkdir /projetos/devs</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chgrp desenvolvedores /projetos/devs</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chmod 2775 /projetos/devs</span><br><br>
+                
+                <span class="comment"># Agora qualquer arquivo criado terá grupo "desenvolvedores"!</span><br>
+                <span class="prompt">maria@linux</span>:/projetos/devs$ <span class="command">touch codigo.py</span><br>
+                <span class="prompt">maria@linux</span>:/projetos/devs$ <span class="command">ls -l codigo.py</span><br>
+                <span class="output">-rw-rw-r-- 1 maria <span class="highlight">desenvolvedores</span> 0 Jan 15 codigo.py</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 16: Sticky Bit -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📌 Permissões Especiais: Sticky Bit</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;"><strong>Sticky Bit</strong> = Proteção contra deleção</p>
+            </div>
+            <div class="content-box box-info">
+                <h3>🤔 O que faz?</h3>
+                <p>Em diretórios com Sticky Bit, usuários só podem <strong>deletar seus próprios arquivos</strong>, mesmo tendo permissão de escrita no diretório.</p>
+                <p style="margin-top: 15px;"><strong>Exemplo clássico:</strong> o diretório <code>/tmp</code></p>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Ver sticky bit no /tmp</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -ld /tmp</span><br>
+                <span class="output">drwxrwxrw<span class="highlight">t</span> 15 root root 4096 Jan 15 /tmp</span><br><br>
+                
+                <span class="comment"># O "t" no final indica sticky bit!</span><br><br>
+                
+                <span class="comment"># Adicionar sticky bit</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chmod +t /pasta_compartilhada</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chmod 1777 /pasta_compartilhada</span>
+            </div>
+            <div class="grid-3" style="margin-top: 20px;">
+                <div class="command-card">
+                    <div class="cmd">4xxx</div>
+                    <h4>SUID</h4>
+                    <p>Executa como dono</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">2xxx</div>
+                    <h4>SGID</h4>
+                    <p>Herda grupo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">1xxx</div>
+                    <h4>Sticky</h4>
+                    <p>Proteção de deleção</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 17: Caso Prático - Servidor Web -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🌐 Caso Prático: Servidor Web</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Configurando permissões corretas para /var/www/html</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># 1. Definir dono como www-data (usuário do Apache/Nginx)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chown -R www-data:www-data /var/www/html</span><br><br>
+                
+                <span class="comment"># 2. Permissões para diretórios (755)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">find /var/www/html -type d -exec chmod 755 {} \;</span><br><br>
+                
+                <span class="comment"># 3. Permissões para arquivos (644)</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">find /var/www/html -type f -exec chmod 644 {} \;</span><br><br>
+                
+                <span class="comment"># 4. Adicionar seu usuário ao grupo www-data</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">usermod -aG www-data seu_usuario</span><br><br>
+                
+                <span class="comment"># 5. Permitir que o grupo escreva</span><br>
+                <span class="root-prompt">root@linux</span>:~# <span class="command">chmod -R g+w /var/www/html</span>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 20px;">
+                <h3>💡 Por que essas permissões?</h3>
+                <div class="bullet-point"><strong>755 dirs:</strong> Web server pode entrar e ler</div>
+                <div class="bullet-point"><strong>644 files:</strong> Web server pode ler, mas não modificar</div>
+                <div class="bullet-point"><strong>www-data:</strong> Usuário padrão do Apache/Nginx</div>
+            </div>
+        </div>
+
+        <!-- SLIDE 18: Caso Prático - SSH Keys -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔑 Caso Prático: Chaves SSH</h2>
+            <div class="content-box box-warning" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">SSH é MUITO exigente com permissões!</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Permissões OBRIGATÓRIAS para SSH funcionar:</span><br><br>
+                
+                <span class="comment"># Diretório ~/.ssh (700 - só o dono)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 700 ~/.ssh</span><br><br>
+                
+                <span class="comment"># Chave privada (600 - só o dono lê/escreve)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 600 ~/.ssh/id_rsa</span><br><br>
+                
+                <span class="comment"># Chave pública (644 - todos podem ler)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 644 ~/.ssh/id_rsa.pub</span><br><br>
+                
+                <span class="comment"># Arquivo authorized_keys (600)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 600 ~/.ssh/authorized_keys</span><br><br>
+                
+                <span class="comment"># Arquivo config (600)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 600 ~/.ssh/config</span>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚠️ Se as permissões estiverem erradas:</h3>
+                <p style="font-family: monospace; background: #1a202c; color: #fc8181; padding: 10px; border-radius: 8px; margin-top: 10px;">
+                    Permissions 0644 for '/home/user/.ssh/id_rsa' are too open.<br>
+                    It is required that your private key files are NOT accessible by others.
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 19: Verificando Permissões -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔍 Comandos de Verificação</h2>
+            <div class="box-terminal">
+                <span class="comment"># Ver permissões detalhadas</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -la</span><br>
+                <span class="output">total 32</span><br>
+                <span class="output">drwxr-xr-x 5 usuario usuario 4096 Jan 15 .</span><br>
+                <span class="output">drwxr-xr-x 3 root    root    4096 Jan 10 ..</span><br>
+                <span class="output">-rw------- 1 usuario usuario  220 Jan 10 .bash_history</span><br><br>
+                
+                <span class="comment"># Ver permissões em formato octal</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">stat -c "%a %n" arquivo.txt</span><br>
+                <span class="output">644 arquivo.txt</span><br><br>
+                
+                <span class="comment"># Ver todos os detalhes com stat</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">stat arquivo.txt</span><br>
+                <span class="output">  File: arquivo.txt</span><br>
+                <span class="output">  Size: 1234      Blocks: 8          IO Block: 4096</span><br>
+                <span class="output">Access: (0644/-rw-r--r--)  Uid: (1000/usuario)  Gid: (1000/usuario)</span><br><br>
+                
+                <span class="comment"># Encontrar arquivos SUID no sistema</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">find / -perm -4000 2>/dev/null</span>
+            </div>
+            <div class="content-box box-tip" style="margin-top: 20px;">
+                <h3>💡 Dica: namei para debug de caminhos</h3>
+                <div class="box-terminal" style="padding: 15px; font-size: 0.9em;">
+                    <span class="prompt">usuario@linux</span>:~$ <span class="command">namei -l /var/www/html/index.html</span><br>
+                    <span class="output">f: /var/www/html/index.html</span><br>
+                    <span class="output">drwxr-xr-x root root /</span><br>
+                    <span class="output">drwxr-xr-x root root var</span><br>
+                    <span class="output">drwxr-xr-x root root www</span><br>
+                    <span class="output">drwxr-xr-x www-data www-data html</span><br>
+                    <span class="output">-rw-r--r-- www-data www-data index.html</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 20: Resumo dos Comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos de Permissões</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">chmod</div>
+                    <h4>Mudar Permissões</h4>
+                    <p>chmod 755 arquivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">chown</div>
+                    <h4>Mudar Dono</h4>
+                    <p>chown user:grupo arquivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">chgrp</div>
+                    <h4>Mudar Grupo</h4>
+                    <p>chgrp grupo arquivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">ls -l</div>
+                    <h4>Ver Permissões</h4>
+                    <p>Formato simbólico</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">stat</div>
+                    <h4>Detalhes</h4>
+                    <p>Formato octal</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">umask</div>
+                    <h4>Padrão</h4>
+                    <p>Novos arquivos</p>
+                </div>
+            </div>
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>🔢 Valores Mais Usados</h3>
+                <table class="reference-table">
+                    <tr><th>Octal</th><th>Simbólico</th><th>Uso Típico</th></tr>
+                    <tr><td><code>755</code></td><td>rwxr-xr-x</td><td>Diretórios, scripts executáveis</td></tr>
+                    <tr><td><code>644</code></td><td>rw-r--r--</td><td>Arquivos comuns, configurações</td></tr>
+                    <tr><td><code>700</code></td><td>rwx------</td><td>Diretórios privados</td></tr>
+                    <tr><td><code>600</code></td><td>rw-------</td><td>Chaves SSH, senhas</td></tr>
+                    <tr><td><code>777</code></td><td>rwxrwxrwx</td><td>⚠️ EVITAR! Inseguro</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- SLIDE 21: Quiz Interativo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Arraste os comandos para suas funções corretas!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Dar permissão de execução ao dono</div>
+                        <div class="drop-zone" data-correct="chmod u+x">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Mudar dono do arquivo para "maria"</div>
+                        <div class="drop-zone" data-correct="chown maria">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Permissão padrão para arquivos (rw-r--r--)</div>
+                        <div class="drop-zone" data-correct="chmod 644">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Permissão padrão para diretórios (rwxr-xr-x)</div>
+                        <div class="drop-zone" data-correct="chmod 755">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Ver grupos do usuário atual</div>
+                        <div class="drop-zone" data-correct="groups">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Ver permissões em formato octal</div>
+                        <div class="drop-zone" data-correct="stat">Arraste aqui</div>
+                    </div>
+                </div>
+
+                <div class="col-answers" id="answersPool">
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 22: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🔐</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Você completou a Aula 06!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos hoje:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Permissões rwx (ler, escrever, executar)</div>
+                            <div class="bullet-point">Níveis: dono, grupo e outros</div>
+                            <div class="bullet-point">Sistema octal (755, 644, etc.)</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">Comandos chmod, chown, chgrp</div>
+                            <div class="bullet-point">Permissões especiais (SUID, SGID, Sticky)</div>
+                            <div class="bullet-point">umask para padrões</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p>Vamos aprender sobre <strong>Gerenciamento de Pacotes</strong>! apt, yum, dnf e mais.</p>
+                </div>
+                <div class="content-box box-tip" style="max-width: 700px; margin-top: 20px;">
+                    <h3>💡 Lembrete Final</h3>
+                    <p><strong>755</strong> para diretórios e executáveis, <strong>644</strong> para arquivos!</p>
+                    <p>E nunca use <code>chmod 777</code> em produção! 😉</p>
+                </div>
+                <div style="margin-top: 40px;">
+                    <a href="dashboard.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">
+                        Voltar para o Dashboard 🏠
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        // === LÓGICA DE NAVEGAÇÃO ===
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // === LÓGICA DO QUIZ ===
+        const answersData = [
+            { id: 'chmod u+x', text: 'chmod u+x' },
+            { id: 'chown maria', text: 'chown maria' },
+            { id: 'chmod 644', text: 'chmod 644' },
+            { id: 'chmod 755', text: 'chmod 755' },
+            { id: 'groups', text: 'groups' },
+            { id: 'stat', text: 'stat' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            const shuffled = shuffleArray([...answersData]);
+            
+            shuffled.forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                
+                div.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                });
+                div.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                });
+                
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    
+                    const jaTemResposta = zone.querySelector('.answer-item');
+                    
+                    if (draggedItem && !jaTemResposta) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            const total = zones.length;
+            
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${total}!</h3>`;
+            
+            if(correct === total) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina permissões no Linux!</p>';
+            else if(correct >= total/2) resultDiv.innerHTML += '<p>👍 Bom trabalho! Revise os que errou.</p>';
+            else resultDiv.innerHTML += '<p>📚 Continue praticando! Use chmod e ls -l no terminal!</p>';
+        }
+
+        function resetQuiz() {
+            initQuiz();
+        }
+
+        // Inicia tudo
+        initQuiz();
+
+    </script>
+</body>
+</html>
