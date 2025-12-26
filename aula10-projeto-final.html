@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -25,13 +26,25 @@
         .box-highlight { border-color: #f39c12; background: #fffaf0; }
         .box-info { border-color: var(--primary); background: #f4f7fe; }
         .box-success { border-color: var(--accent-green); background: #f0fdf4; }
-        .box-terminal { background: #1a202c; color: #38ef7d; font-family: 'Courier New', monospace; border-left: 5px solid #38ef7d; padding: 20px; border-radius: 12px; font-size: 0.95em; line-height: 1.7; overflow-x: auto; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d; 
+            padding: 20px; 
+            border-radius: 12px; 
+            font-size: 0.9em; 
+            line-height: 1.6; 
+            overflow-x: auto; 
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
         .box-terminal .prompt { color: #63b3ed; }
         .box-terminal .root { color: #fc8181; }
-        .box-terminal .command { color: #38ef7d; }
-        .box-terminal .output { color: #a0aec0; }
-        .box-terminal .comment { color: #718096; font-style: italic; }
-        .box-terminal .highlight { color: #f6e05e; }
+        .box-terminal .cmd { color: #38ef7d; }
+        .box-terminal .out { color: #a0aec0; }
+        .box-terminal .cmt { color: #718096; font-style: italic; }
+        .box-terminal .hl { color: #f6e05e; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .bullet-point { display: flex; align-items: center; margin: 6px 0; font-size: 1em; }
         .bullet-point::before { content: "🔧"; margin-right: 8px; }
@@ -50,7 +63,7 @@
         .nav-btn { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px; text-decoration: none; }
         .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
         .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
-        .structure-tree { background: #1a202c; color: #38ef7d; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; line-height: 1.8; }
+        .structure-tree { background: #1a202c; color: #38ef7d; padding: 20px; border-radius: 10px; font-family: 'Courier New', monospace; line-height: 1.8; white-space: pre; }
         .structure-tree .folder { color: #63b3ed; }
         .structure-tree .file { color: #a0aec0; }
         .aula-tag { background: var(--primary); color: white; padding: 5px 10px; border-radius: 15px; margin: 3px; display: inline-block; }
@@ -145,29 +158,28 @@
         <div class="slide-card">
             <h2 class="slide-subtitle">👥 Etapa 1: Usuários e Grupos</h2>
             <div class="section-divider">Criando a equipe TechCorp</div>
-            <div class="box-terminal">
-<span class="comment"># 1. Criar os grupos</span>
-<span class="root">root@linux</span>:~# <span class="command">groupadd devs</span>
-<span class="root">root@linux</span>:~# <span class="command">groupadd gestao</span>
+            <div class="box-terminal"><span class="cmt"># 1. Criar os grupos</span>
+<span class="root">root@linux</span>:~# <span class="cmd">groupadd devs</span>
+<span class="root">root@linux</span>:~# <span class="cmd">groupadd gestao</span>
 
-<span class="comment"># 2. Criar os desenvolvedores</span>
-<span class="root">root@linux</span>:~# <span class="command">useradd -m -s /bin/bash -G devs dev1</span>
-<span class="root">root@linux</span>:~# <span class="command">useradd -m -s /bin/bash -G devs dev2</span>
-<span class="root">root@linux</span>:~# <span class="command">useradd -m -s /bin/bash -G devs dev3</span>
+<span class="cmt"># 2. Criar os desenvolvedores</span>
+<span class="root">root@linux</span>:~# <span class="cmd">useradd -m -s /bin/bash -G devs dev1</span>
+<span class="root">root@linux</span>:~# <span class="cmd">useradd -m -s /bin/bash -G devs dev2</span>
+<span class="root">root@linux</span>:~# <span class="cmd">useradd -m -s /bin/bash -G devs dev3</span>
 
-<span class="comment"># 3. Criar o gerente (pertence aos dois grupos!)</span>
-<span class="root">root@linux</span>:~# <span class="command">useradd -m -s /bin/bash -G gestao,devs gerente</span>
+<span class="cmt"># 3. Criar o gerente (pertence aos dois grupos!)</span>
+<span class="root">root@linux</span>:~# <span class="cmd">useradd -m -s /bin/bash -G gestao,devs gerente</span>
 
-<span class="comment"># 4. Definir senhas</span>
-<span class="root">root@linux</span>:~# <span class="command">passwd dev1</span>
-<span class="root">root@linux</span>:~# <span class="command">passwd dev2</span>
-<span class="root">root@linux</span>:~# <span class="command">passwd dev3</span>
-<span class="root">root@linux</span>:~# <span class="command">passwd gerente</span>
+<span class="cmt"># 4. Definir senhas</span>
+<span class="root">root@linux</span>:~# <span class="cmd">passwd dev1</span>
+<span class="root">root@linux</span>:~# <span class="cmd">passwd dev2</span>
+<span class="root">root@linux</span>:~# <span class="cmd">passwd dev3</span>
+<span class="root">root@linux</span>:~# <span class="cmd">passwd gerente</span>
 
-<span class="comment"># 5. Verificar</span>
-<span class="root">root@linux</span>:~# <span class="command">grep -E "devs|gestao" /etc/group</span>
-<span class="output">devs:x:1001:dev1,dev2,dev3,gerente</span>
-<span class="output">gestao:x:1002:gerente</span></div>
+<span class="cmt"># 5. Verificar</span>
+<span class="root">root@linux</span>:~# <span class="cmd">grep -E "devs|gestao" /etc/group</span>
+<span class="out">devs:x:1001:dev1,dev2,dev3,gerente</span>
+<span class="out">gestao:x:1002:gerente</span></div>
             <div class="checklist">
                 <div class="checklist-item"><input type="checkbox" id="c1"><label for="c1">Grupos devs e gestao criados</label><span class="aula-ref">Aula 04</span></div>
                 <div class="checklist-item"><input type="checkbox" id="c2"><label for="c2">Usuários dev1, dev2, dev3 criados</label><span class="aula-ref">Aula 04</span></div>
@@ -179,48 +191,47 @@
         <div class="slide-card">
             <h2 class="slide-subtitle">📁 Etapa 2: Estrutura de Pastas</h2>
             <div class="section-divider">Criando a árvore de diretórios</div>
-            <div class="box-terminal">
-<span class="comment"># 1. Criar estrutura principal</span>
-<span class="root">root@linux</span>:~# <span class="command">mkdir -p /projetos/techcorp/{codigo,documentos,logs}</span>
-<span class="root">root@linux</span>:~# <span class="command">mkdir -p /projetos/backup</span>
+            <div class="box-terminal"><span class="cmt"># 1. Criar estrutura principal</span>
+<span class="root">root@linux</span>:~# <span class="cmd">mkdir -p /projetos/techcorp/{codigo,documentos,logs}</span>
+<span class="root">root@linux</span>:~# <span class="cmd">mkdir -p /projetos/backup</span>
 
-<span class="comment"># 2. Verificar estrutura criada</span>
-<span class="root">root@linux</span>:~# <span class="command">ls -la /projetos/</span>
-<span class="output">drwxr-xr-x  3 root root 4096 jan 20 techcorp</span>
-<span class="output">drwxr-xr-x  2 root root 4096 jan 20 backup</span>
+<span class="cmt"># 2. Verificar estrutura criada</span>
+<span class="root">root@linux</span>:~# <span class="cmd">ls -la /projetos/</span>
+<span class="out">drwxr-xr-x  3 root root 4096 jan 20 techcorp</span>
+<span class="out">drwxr-xr-x  2 root root 4096 jan 20 backup</span>
 
-<span class="comment"># 3. Ver subpastas</span>
-<span class="root">root@linux</span>:~# <span class="command">ls -la /projetos/techcorp/</span>
-<span class="output">drwxr-xr-x  2 root root 4096 jan 20 codigo</span>
-<span class="output">drwxr-xr-x  2 root root 4096 jan 20 documentos</span>
-<span class="output">drwxr-xr-x  2 root root 4096 jan 20 logs</span></div>
+<span class="cmt"># 3. Ver subpastas</span>
+<span class="root">root@linux</span>:~# <span class="cmd">ls -la /projetos/techcorp/</span>
+<span class="out">drwxr-xr-x  2 root root 4096 jan 20 codigo</span>
+<span class="out">drwxr-xr-x  2 root root 4096 jan 20 documentos</span>
+<span class="out">drwxr-xr-x  2 root root 4096 jan 20 logs</span></div>
             <div class="content-box box-info" style="margin-top: 15px;"><h3>💡 Dica: mkdir -p</h3><p>O <code>-p</code> cria pastas intermediárias. As chaves <code>{}</code> criam múltiplas pastas de uma vez!</p></div>
             <div class="checklist">
                 <div class="checklist-item"><input type="checkbox" id="c4"><label for="c4">Pasta /projetos criada</label><span class="aula-ref">Aula 03</span></div>
                 <div class="checklist-item"><input type="checkbox" id="c5"><label for="c5">Subpastas codigo, documentos, logs</label><span class="aula-ref">Aula 02</span></div>
             </div>
         </div>
+
         <!-- SLIDE 6: Etapa 3 - Permissões -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🔐 Etapa 3: Configurar Permissões</h2>
             <div class="section-divider">Definindo quem pode acessar o quê</div>
-            <div class="box-terminal">
-<span class="comment"># 1. Pasta codigo: grupo devs com acesso total</span>
-<span class="root">root@linux</span>:~# <span class="command">chown root:devs /projetos/techcorp/codigo</span>
-<span class="root">root@linux</span>:~# <span class="command">chmod 2775 /projetos/techcorp/codigo</span>
+            <div class="box-terminal"><span class="cmt"># 1. Pasta codigo: grupo devs com acesso total</span>
+<span class="root">root@linux</span>:~# <span class="cmd">chown root:devs /projetos/techcorp/codigo</span>
+<span class="root">root@linux</span>:~# <span class="cmd">chmod 2775 /projetos/techcorp/codigo</span>
 
-<span class="comment"># 2. Pasta documentos: grupo gestao com acesso total</span>
-<span class="root">root@linux</span>:~# <span class="command">chown root:gestao /projetos/techcorp/documentos</span>
-<span class="root">root@linux</span>:~# <span class="command">chmod 2775 /projetos/techcorp/documentos</span>
+<span class="cmt"># 2. Pasta documentos: grupo gestao com acesso total</span>
+<span class="root">root@linux</span>:~# <span class="cmd">chown root:gestao /projetos/techcorp/documentos</span>
+<span class="root">root@linux</span>:~# <span class="cmd">chmod 2775 /projetos/techcorp/documentos</span>
 
-<span class="comment"># 3. Pasta logs: todos leem, só root escreve</span>
-<span class="root">root@linux</span>:~# <span class="command">chmod 755 /projetos/techcorp/logs</span>
+<span class="cmt"># 3. Pasta logs: todos leem, só root escreve</span>
+<span class="root">root@linux</span>:~# <span class="cmd">chmod 755 /projetos/techcorp/logs</span>
 
-<span class="comment"># 4. Verificar permissões</span>
-<span class="root">root@linux</span>:~# <span class="command">ls -la /projetos/techcorp/</span>
-<span class="output">drwxrws<span class="highlight">r-x</span>  2 root <span class="highlight">devs</span>   4096 codigo</span>
-<span class="output">drwxrws<span class="highlight">r-x</span>  2 root <span class="highlight">gestao</span> 4096 documentos</span>
-<span class="output">drwxr-xr-x  2 root root   4096 logs</span></div>
+<span class="cmt"># 4. Verificar permissões</span>
+<span class="root">root@linux</span>:~# <span class="cmd">ls -la /projetos/techcorp/</span>
+<span class="out">drwxrws<span class="hl">r-x</span>  2 root <span class="hl">devs</span>   4096 codigo</span>
+<span class="out">drwxrws<span class="hl">r-x</span>  2 root <span class="hl">gestao</span> 4096 documentos</span>
+<span class="out">drwxr-xr-x  2 root root   4096 logs</span></div>
             <div class="content-box box-highlight" style="margin-top: 15px;"><h3>💡 Por que 2775?</h3><p><strong>2</strong> = SGID (arquivos herdam o grupo) | <strong>775</strong> = rwx para dono e grupo, rx para outros</p></div>
             <div class="checklist">
                 <div class="checklist-item"><input type="checkbox" id="c6"><label for="c6">codigo/ com grupo devs</label><span class="aula-ref">Aula 05</span></div>
@@ -228,90 +239,86 @@
                 <div class="checklist-item"><input type="checkbox" id="c8"><label for="c8">SGID ativado nas pastas</label><span class="aula-ref">Aula 05</span></div>
             </div>
         </div>
-
         <!-- SLIDE 7: Etapa 4 - Montar Pendrive -->
         <div class="slide-card">
             <h2 class="slide-subtitle">💾 Etapa 4: Montar Pendrive</h2>
             <div class="section-divider">Configurando armazenamento para backup</div>
-            <div class="box-terminal">
-<span class="comment"># 1. Identificar o pendrive</span>
-<span class="root">root@linux</span>:~# <span class="command">lsblk</span>
-<span class="output">NAME   SIZE TYPE MOUNTPOINT</span>
-<span class="output">sda    500G disk</span>
-<span class="output">└─sda1 500G part /</span>
-<span class="output"><span class="highlight">sdb</span>     16G disk</span>
-<span class="output">└─<span class="highlight">sdb1</span>  16G part</span> <span class="comment"># ← Pendrive!</span>
+            <div class="box-terminal"><span class="cmt"># 1. Identificar o pendrive</span>
+<span class="root">root@linux</span>:~# <span class="cmd">lsblk</span>
+<span class="out">NAME   SIZE TYPE MOUNTPOINT</span>
+<span class="out">sda    500G disk</span>
+<span class="out">└─sda1 500G part /</span>
+<span class="out"><span class="hl">sdb</span>     16G disk</span>
+<span class="out">└─<span class="hl">sdb1</span>  16G part</span>            <span class="cmt"># ← Pendrive!</span>
 
-<span class="comment"># 2. Ver informações do pendrive</span>
-<span class="root">root@linux</span>:~# <span class="command">blkid /dev/sdb1</span>
-<span class="output">/dev/sdb1: UUID="<span class="highlight">1234-ABCD</span>" TYPE="vfat"</span>
+<span class="cmt"># 2. Ver informações do pendrive</span>
+<span class="root">root@linux</span>:~# <span class="cmd">blkid /dev/sdb1</span>
+<span class="out">/dev/sdb1: UUID="<span class="hl">1234-ABCD</span>" TYPE="vfat"</span>
 
-<span class="comment"># 3. Montar na pasta de backup</span>
-<span class="root">root@linux</span>:~# <span class="command">mount /dev/sdb1 /projetos/backup</span>
+<span class="cmt"># 3. Montar na pasta de backup</span>
+<span class="root">root@linux</span>:~# <span class="cmd">mount /dev/sdb1 /projetos/backup</span>
 
-<span class="comment"># 4. Verificar montagem</span>
-<span class="root">root@linux</span>:~# <span class="command">df -h | grep backup</span>
-<span class="output">/dev/sdb1  16G  1.2G  15G  8% /projetos/backup</span>
+<span class="cmt"># 4. Verificar montagem</span>
+<span class="root">root@linux</span>:~# <span class="cmd">df -h | grep backup</span>
+<span class="out">/dev/sdb1  16G  1.2G  15G  8% /projetos/backup</span>
 
-<span class="comment"># 5. Fazer backup dos arquivos</span>
-<span class="root">root@linux</span>:~# <span class="command">cp -r /projetos/techcorp/codigo /projetos/backup/</span></div>
+<span class="cmt"># 5. Fazer backup dos arquivos</span>
+<span class="root">root@linux</span>:~# <span class="cmd">cp -r /projetos/techcorp/codigo /projetos/backup/</span></div>
             <div class="checklist">
                 <div class="checklist-item"><input type="checkbox" id="c9"><label for="c9">Pendrive identificado (lsblk)</label><span class="aula-ref">Aula 08</span></div>
                 <div class="checklist-item"><input type="checkbox" id="c10"><label for="c10">Montado em /projetos/backup</label><span class="aula-ref">Aula 08</span></div>
                 <div class="checklist-item"><input type="checkbox" id="c11"><label for="c11">Backup realizado</label><span class="aula-ref">Aula 03</span></div>
             </div>
         </div>
+
         <!-- SLIDE 8: Etapa 5 - Análise de Logs -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🔍 Etapa 5: Análise de Logs</h2>
             <div class="section-divider">Usando grep, awk e sed para investigar</div>
-            <div class="box-terminal">
-<span class="comment"># 1. Criar arquivo de log simulado</span>
-<span class="root">root@linux</span>:~# <span class="command">cat > /projetos/techcorp/logs/acessos.log << 'EOF'</span>
-<span class="output">2025-01-20 08:15:32 LOGIN dev1 success</span>
-<span class="output">2025-01-20 08:20:45 LOGIN dev2 success</span>
-<span class="output">2025-01-20 09:00:12 LOGIN gerente success</span>
-<span class="output">2025-01-20 09:15:00 LOGIN hacker failed</span>
-<span class="output">2025-01-20 09:15:05 LOGIN hacker failed</span>
-<span class="output">2025-01-20 10:00:00 LOGIN dev3 success</span>
-<span class="output">2025-01-20 10:05:33 LOGIN admin failed</span>
-<span class="output">EOF</span>
+            <div class="box-terminal"><span class="cmt"># 1. Criar arquivo de log simulado</span>
+<span class="root">root@linux</span>:~# <span class="cmd">cat > /projetos/techcorp/logs/acessos.log</span>
+<span class="out">2025-01-20 08:15:32 LOGIN dev1 success</span>
+<span class="out">2025-01-20 08:20:45 LOGIN dev2 success</span>
+<span class="out">2025-01-20 09:00:12 LOGIN gerente success</span>
+<span class="out">2025-01-20 09:15:00 LOGIN hacker failed</span>
+<span class="out">2025-01-20 09:15:05 LOGIN hacker failed</span>
+<span class="out">2025-01-20 10:00:00 LOGIN dev3 success</span>
+<span class="out">2025-01-20 10:05:33 LOGIN admin failed</span>
 
-<span class="comment"># 2. Encontrar tentativas que falharam</span>
-<span class="root">root@linux</span>:~# <span class="command">grep "failed" /projetos/techcorp/logs/acessos.log</span>
-<span class="output">2025-01-20 09:15:00 LOGIN <span class="highlight">hacker</span> failed</span>
-<span class="output">2025-01-20 09:15:05 LOGIN <span class="highlight">hacker</span> failed</span>
-<span class="output">2025-01-20 10:05:33 LOGIN <span class="highlight">admin</span> failed</span>
+<span class="cmt"># 2. Encontrar tentativas que falharam</span>
+<span class="root">root@linux</span>:~# <span class="cmd">grep "failed" /projetos/techcorp/logs/acessos.log</span>
+<span class="out">2025-01-20 09:15:00 LOGIN <span class="hl">hacker</span> failed</span>
+<span class="out">2025-01-20 09:15:05 LOGIN <span class="hl">hacker</span> failed</span>
+<span class="out">2025-01-20 10:05:33 LOGIN <span class="hl">admin</span> failed</span>
 
-<span class="comment"># 3. Contar quantas falhas</span>
-<span class="root">root@linux</span>:~# <span class="command">grep -c "failed" /projetos/techcorp/logs/acessos.log</span>
-<span class="output">3</span></div>
+<span class="cmt"># 3. Contar quantas falhas</span>
+<span class="root">root@linux</span>:~# <span class="cmd">grep -c "failed" /projetos/techcorp/logs/acessos.log</span>
+<span class="out">3</span></div>
         </div>
 
         <!-- SLIDE 9: Análises Avançadas -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🔍 Análises Avançadas</h2>
             <div class="section-divider">Extraindo informações importantes</div>
-            <div class="box-terminal">
-<span class="comment"># 4. Listar apenas os nomes que falharam (awk)</span>
-<span class="root">root@linux</span>:~# <span class="command">grep "failed" acessos.log | awk '{print $4}'</span>
-<span class="output">hacker</span>
-<span class="output">hacker</span>
-<span class="output">admin</span>
+            <div class="box-terminal"><span class="cmt"># 4. Listar apenas os nomes que falharam (awk)</span>
+<span class="root">root@linux</span>:~# <span class="cmd">grep "failed" acessos.log | awk '{print $4}'</span>
+<span class="out">hacker</span>
+<span class="out">hacker</span>
+<span class="out">admin</span>
 
-<span class="comment"># 5. Contar tentativas por usuário</span>
-<span class="root">root@linux</span>:~# <span class="command">grep "failed" acessos.log | awk '{print $4}' | sort | uniq -c</span>
-<span class="output">   1 admin</span>
-<span class="output">   2 hacker</span>
+<span class="cmt"># 5. Contar tentativas por usuário</span>
+<span class="root">root@linux</span>:~# <span class="cmd">grep "failed" acessos.log | awk '{print $4}' | sort | uniq -c</span>
+<span class="out">   1 admin</span>
+<span class="out">   2 hacker</span>
 
-<span class="comment"># 6. Encontrar logins entre 09:00 e 10:00 (regex)</span>
-<span class="root">root@linux</span>:~# <span class="command">grep -E " 09:[0-9]{2}:" acessos.log</span>
-<span class="output">2025-01-20 09:00:12 LOGIN gerente success</span>
-<span class="output">2025-01-20 09:15:00 LOGIN hacker failed</span>
-<span class="output">2025-01-20 09:15:05 LOGIN hacker failed</span>
+<span class="cmt"># 6. Encontrar logins entre 09:00 e 10:00 (regex)</span>
+<span class="root">root@linux</span>:~# <span class="cmd">grep -E " 09:[0-9]{2}:" acessos.log</span>
+<span class="out">2025-01-20 09:00:12 LOGIN gerente success</span>
+<span class="out">2025-01-20 09:15:00 LOGIN hacker failed</span>
+<span class="out">2025-01-20 09:15:05 LOGIN hacker failed</span>
 
-<span class="comment"># 7. Substituir "failed" por "🚫 BLOQUEADO"</span>
-<span class="root">root@linux</span>:~# <span class="command">sed 's/failed/🚫 BLOQUEADO/g' acessos.log</span></div>
+<span class="cmt"># 7. Substituir "failed" por "🚫 BLOQUEADO"</span>
+<span class="root">root@linux</span>:~# <span class="cmd">sed 's/failed/🚫 BLOQUEADO/g' acessos.log</span></div>
             <div class="checklist">
                 <div class="checklist-item"><input type="checkbox" id="c12"><label for="c12">grep para filtrar falhas</label><span class="aula-ref">Aula 09</span></div>
                 <div class="checklist-item"><input type="checkbox" id="c13"><label for="c13">awk para extrair colunas</label><span class="aula-ref">Aula 09</span></div>
@@ -322,27 +329,26 @@
         <div class="slide-card">
             <h2 class="slide-subtitle">🧪 Teste Final: Colaboração</h2>
             <div class="section-divider">Verificando se dev1 e dev2 podem colaborar</div>
-            <div class="box-terminal">
-<span class="comment"># 1. Logar como dev1</span>
-<span class="root">root@linux</span>:~# <span class="command">su - dev1</span>
+            <div class="box-terminal"><span class="cmt"># 1. Logar como dev1</span>
+<span class="root">root@linux</span>:~# <span class="cmd">su - dev1</span>
 
-<span class="comment"># 2. Criar arquivo na pasta de código</span>
-<span class="prompt">dev1@linux</span>:~$ <span class="command">echo "# Projeto TechCorp" > /projetos/techcorp/codigo/README.md</span>
+<span class="cmt"># 2. Criar arquivo na pasta de código</span>
+<span class="prompt">dev1@linux</span>:~$ <span class="cmd">echo "# Projeto TechCorp" > /projetos/techcorp/codigo/README.md</span>
 
-<span class="comment"># 3. Verificar permissões (grupo deve ser devs!)</span>
-<span class="prompt">dev1@linux</span>:~$ <span class="command">ls -l /projetos/techcorp/codigo/</span>
-<span class="output">-rw-rw-r-- 1 dev1 <span class="highlight">devs</span> 18 jan 20 README.md</span>
+<span class="cmt"># 3. Verificar permissões (grupo deve ser devs!)</span>
+<span class="prompt">dev1@linux</span>:~$ <span class="cmd">ls -l /projetos/techcorp/codigo/</span>
+<span class="out">-rw-rw-r-- 1 dev1 <span class="hl">devs</span> 18 jan 20 README.md</span>
 
-<span class="comment"># 4. Sair e testar com dev2</span>
-<span class="prompt">dev1@linux</span>:~$ <span class="command">exit</span>
-<span class="root">root@linux</span>:~# <span class="command">su - dev2</span>
+<span class="cmt"># 4. Sair e testar com dev2</span>
+<span class="prompt">dev1@linux</span>:~$ <span class="cmd">exit</span>
+<span class="root">root@linux</span>:~# <span class="cmd">su - dev2</span>
 
-<span class="comment"># 5. dev2 consegue editar arquivo de dev1?</span>
-<span class="prompt">dev2@linux</span>:~$ <span class="command">echo "Editado por dev2" >> /projetos/techcorp/codigo/README.md</span>
-<span class="prompt">dev2@linux</span>:~$ <span class="command">cat /projetos/techcorp/codigo/README.md</span>
-<span class="output"># Projeto TechCorp</span>
-<span class="output">Editado por dev2</span>
-<span class="comment"># ✅ Funciona! Colaboração OK!</span></div>
+<span class="cmt"># 5. dev2 consegue editar arquivo de dev1?</span>
+<span class="prompt">dev2@linux</span>:~$ <span class="cmd">echo "Editado por dev2" >> /projetos/techcorp/codigo/README.md</span>
+<span class="prompt">dev2@linux</span>:~$ <span class="cmd">cat /projetos/techcorp/codigo/README.md</span>
+<span class="out"># Projeto TechCorp</span>
+<span class="out">Editado por dev2</span>
+<span class="cmt"># ✅ Funciona! Colaboração OK!</span></div>
             <div class="content-box box-success" style="margin-top: 15px;"><h3>✅ Ambiente colaborativo funcionando!</h3><p>O SGID garante que todos do grupo <code>devs</code> possam editar os mesmos arquivos!</p></div>
         </div>
 
@@ -379,6 +385,7 @@
             </div>
             <div class="content-box box-highlight" style="margin-top: 20px; text-align: center;"><h3>🎯 Meta: Todos os itens marcados!</h3></div>
         </div>
+
         <!-- SLIDE 12: Conclusão -->
         <div class="slide-card">
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
