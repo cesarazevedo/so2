@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 02 - Arquitetura e FHS (Diretórios do Sistema)</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.5em; }
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .folder { color: #63b3ed; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "📁";
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.4em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 10px; }
+        .command-card p { font-size: 0.9em; color: var(--text-light); }
+        .dir-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .tree-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            font-size: 1.05em;
+        }
+        .tree-container .root { color: #f6e05e; font-weight: bold; }
+        .tree-container .folder { color: #63b3ed; }
+        .tree-container .desc { color: #a0aec0; font-style: italic; }
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+        .quiz-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .tree-container { font-size: 0.85em; }
+        }
+    </style>
+</head>
+<body>
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn"><span>←</span> Voltar</a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 02</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">🏗️</div>
+                <h1 class="slide-title">Arquitetura e FHS</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>A Espinha Dorsal do Linux</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Entenda os diretórios do sistema!</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 600px;">
+                    <span class="prompt">usuario@linux</span>:~$ <span class="command">ls /</span><br>
+                    <span class="folder">bin  boot  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var</span><br>
+                    <span class="comment"># Para que serve cada um? 🤔</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Hoje você vai conhecer o "mapa" do sistema de arquivos Linux!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que é FHS -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 O que é FHS?</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📋 Definição</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;"><strong>FHS</strong> = Filesystem Hierarchy Standard</p>
+                    <p style="margin-top: 15px;">É o <strong>padrão</strong> que define onde cada tipo de arquivo deve ficar no Linux.</p>
+                    <p style="margin-top: 10px;">Todas as distros seguem esse padrão!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🏢 Analogia: Prédio Comercial</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Imagine um prédio organizado:</p>
+                    <div class="bullet-point">Térreo → Recepção (raiz /)</div>
+                    <div class="bullet-point">1º andar → Escritórios (/home)</div>
+                    <div class="bullet-point">Subsolo → Máquinas (/dev)</div>
+                    <div class="bullet-point">Arquivo → Documentos (/var)</div>
+                </div>
+            </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                💼 <strong>Por que importa:</strong> Saber onde as coisas ficam é essencial para administrar sistemas!
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Diferença Windows vs Linux -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔄 Windows vs Linux</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">No Linux, <strong>não existe C:</strong> — Tudo começa na raiz <code>/</code></p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-warning">
+                    <h3>🪟 Windows</h3>
+                    <p style="line-height: 1.8;">Cada disco tem uma letra:</p>
+                    <div class="bullet-point"><code>C:\</code> → Sistema</div>
+                    <div class="bullet-point"><code>D:\</code> → Outro disco</div>
+                    <div class="bullet-point"><code>E:\</code> → Pendrive</div>
+                    <p style="margin-top: 15px;">Estrutura fragmentada, cada unidade separada.</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🐧 Linux</h3>
+                    <p style="line-height: 1.8;">Tudo em uma única árvore:</p>
+                    <div class="bullet-point"><code>/</code> → Raiz (tudo começa aqui)</div>
+                    <div class="bullet-point"><code>/home</code> → Seus arquivos</div>
+                    <div class="bullet-point"><code>/media</code> → Pendrive montado</div>
+                    <p style="margin-top: 15px;">Estrutura unificada e organizada!</p>
+                </div>
+            </div>
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>💡 Curiosidade</h3>
+                <p>No Linux, até o pendrive vira uma "pasta" dentro da árvore. Isso se chama <strong>montar</strong> um dispositivo.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Visão Geral da Árvore -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🌳 Visão Geral da Árvore</h2>
+            <div class="tree-container">
+                <span class="root">/</span> <span class="desc">← Raiz de TUDO</span><br>
+                ├── <span class="folder">bin/</span> <span class="desc">← Programas essenciais</span><br>
+                ├── <span class="folder">boot/</span> <span class="desc">← Arquivos de inicialização</span><br>
+                ├── <span class="folder">dev/</span> <span class="desc">← Dispositivos (HD, USB...)</span><br>
+                ├── <span class="folder">etc/</span> <span class="desc">← Configurações do sistema</span><br>
+                ├── <span class="folder">home/</span> <span class="desc">← Pastas dos usuários</span><br>
+                ├── <span class="folder">lib/</span> <span class="desc">← Bibliotecas do sistema</span><br>
+                ├── <span class="folder">media/</span> <span class="desc">← Mídias removíveis</span><br>
+                ├── <span class="folder">mnt/</span> <span class="desc">← Montagens temporárias</span><br>
+                ├── <span class="folder">opt/</span> <span class="desc">← Programas opcionais</span><br>
+                ├── <span class="folder">proc/</span> <span class="desc">← Informações do kernel</span><br>
+                ├── <span class="folder">root/</span> <span class="desc">← Home do superusuário</span><br>
+                ├── <span class="folder">tmp/</span> <span class="desc">← Arquivos temporários</span><br>
+                ├── <span class="folder">usr/</span> <span class="desc">← Programas do usuário</span><br>
+                └── <span class="folder">var/</span> <span class="desc">← Dados variáveis (logs)</span>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 20px; text-align: center;">
+                <p>Parece muito? Calma! Vamos ver os <strong>mais importantes</strong> um por um.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: /home - Sua casa -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🏠 /home — Sua Casa</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <div class="dir-icon">🏠</div>
+                    <h3>/home</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Onde ficam as <strong>pastas pessoais</strong> de cada usuário.</p>
+                    <p style="margin-top: 15px;">Cada usuário tem sua própria pasta:</p>
+                    <div class="bullet-point"><code>/home/joao</code></div>
+                    <div class="bullet-point"><code>/home/maria</code></div>
+                    <div class="bullet-point"><code>/home/usuario</code></div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💡 O que fica aqui?</h3>
+                    <div class="bullet-point">Documentos pessoais</div>
+                    <div class="bullet-point">Downloads</div>
+                    <div class="bullet-point">Configurações de apps</div>
+                    <div class="bullet-point">Área de trabalho</div>
+                    <p style="margin-top: 15px;"><strong>Dica:</strong> O til <code>~</code> é um atalho para sua home!</p>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cd ~</span> <span class="comment"># Vai para /home/usuario</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls</span><br>
+                <span class="output">Documentos  Downloads  Imagens  Música  Vídeos  .bashrc  .config</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: /etc - Configurações -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚙️ /etc — Configurações</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <div class="dir-icon">⚙️</div>
+                    <h3>/etc</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Arquivos de <strong>configuração do sistema</strong> e dos serviços.</p>
+                    <p style="margin-top: 15px;">"etc" vem de "et cetera" (e outras coisas).</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>📄 Arquivos importantes</h3>
+                    <div class="bullet-point"><code>/etc/passwd</code> → Usuários</div>
+                    <div class="bullet-point"><code>/etc/hosts</code> → DNS local</div>
+                    <div class="bullet-point"><code>/etc/fstab</code> → Discos</div>
+                    <div class="bullet-point"><code>/etc/ssh/</code> → Config do SSH</div>
+                    <div class="bullet-point"><code>/etc/apache2/</code> → Config Apache</div>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /etc/hostname</span><br>
+                <span class="output">meu-servidor</span><br><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls /etc/*.conf | head -5</span><br>
+                <span class="output">/etc/resolv.conf  /etc/sysctl.conf  /etc/host.conf...</span>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <p>⚠️ <strong>Cuidado:</strong> Mexer errado aqui pode quebrar o sistema!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: /var - Dados Variáveis -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📊 /var — Dados Variáveis</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <div class="dir-icon">📊</div>
+                    <h3>/var</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Dados que <strong>mudam constantemente</strong> durante o uso do sistema.</p>
+                    <p style="margin-top: 15px;">"var" vem de "variable" (variável).</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>📁 Subpastas importantes</h3>
+                    <div class="bullet-point"><code>/var/log/</code> → Logs do sistema</div>
+                    <div class="bullet-point"><code>/var/www/</code> → Sites web</div>
+                    <div class="bullet-point"><code>/var/mail/</code> → E-mails</div>
+                    <div class="bullet-point"><code>/var/cache/</code> → Cache</div>
+                    <div class="bullet-point"><code>/var/lib/</code> → Dados de apps</div>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls /var/log/</span><br>
+                <span class="output">syslog  auth.log  kern.log  apache2/  mysql/</span><br><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">tail -3 /var/log/syslog</span><br>
+                <span class="output">Jan 15 10:30:45 linux systemd: Started Daily apt...</span>
+            </div>
+            <div class="content-box box-success" style="margin-top: 15px;">
+                <p>💡 <strong>Dica:</strong> Quando algo dá errado, os logs em /var/log são seu melhor amigo!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: /bin, /sbin, /usr - Programas -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚡ /bin, /sbin, /usr — Programas</h2>
+            <div class="grid-3">
+                <div class="content-box box-info" style="text-align: center;">
+                    <div class="dir-icon">🔧</div>
+                    <h3>/bin</h3>
+                    <p>Comandos <strong>essenciais</strong> para todos os usuários.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;"><code>ls, cp, mv, cat, bash</code></p>
+                </div>
+                <div class="content-box box-highlight" style="text-align: center;">
+                    <div class="dir-icon">🛠️</div>
+                    <h3>/sbin</h3>
+                    <p>Comandos de <strong>administração</strong> (para root).</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;"><code>fdisk, mkfs, iptables</code></p>
+                </div>
+                <div class="content-box box-success" style="text-align: center;">
+                    <div class="dir-icon">📦</div>
+                    <h3>/usr</h3>
+                    <p>Programas <strong>instalados</strong> pelo usuário.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;"><code>/usr/bin, /usr/lib</code></p>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">which ls</span><br>
+                <span class="output">/usr/bin/ls</span><br><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">which fdisk</span><br>
+                <span class="output">/usr/sbin/fdisk</span>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <p>💡 <strong>Nota:</strong> Em distros modernas, /bin e /sbin são links para /usr/bin e /usr/sbin.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: /dev - Dispositivos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔌 /dev — Dispositivos</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <div class="dir-icon">🔌</div>
+                    <h3>/dev</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Arquivos especiais que representam <strong>dispositivos de hardware</strong>.</p>
+                    <p style="margin-top: 15px;">No Linux, "tudo é arquivo" — até seu HD!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🖥️ Dispositivos comuns</h3>
+                    <div class="bullet-point"><code>/dev/sda</code> → 1º disco (HD/SSD)</div>
+                    <div class="bullet-point"><code>/dev/sda1</code> → 1ª partição</div>
+                    <div class="bullet-point"><code>/dev/null</code> → "Lixeira infinita"</div>
+                    <div class="bullet-point"><code>/dev/zero</code> → Fonte de zeros</div>
+                    <div class="bullet-point"><code>/dev/tty</code> → Terminal</div>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls /dev/sd*</span><br>
+                <span class="output">/dev/sda  /dev/sda1  /dev/sda2  /dev/sdb  /dev/sdb1</span><br><br>
+                <span class="comment"># Jogar saída fora (útil em scripts)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">comando_barulhento > /dev/null</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: /tmp e /proc -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🗑️ /tmp e 🧠 /proc</h2>
+            <div class="grid-2">
+                <div class="content-box box-warning">
+                    <div class="dir-icon">🗑️</div>
+                    <h3>/tmp</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Arquivos <strong>temporários</strong>.</p>
+                    <p style="margin-top: 15px;">Qualquer usuário pode escrever aqui.</p>
+                    <p style="margin-top: 10px;">⚠️ <strong>Apagado a cada boot!</strong></p>
+                    <p style="margin-top: 10px;">Nunca guarde nada importante aqui.</p>
+                </div>
+                <div class="content-box box-info">
+                    <div class="dir-icon">🧠</div>
+                    <h3>/proc</h3>
+                    <p style="font-size: 1.1em; line-height: 1.6;">Sistema de arquivos <strong>virtual</strong>.</p>
+                    <p style="margin-top: 15px;">Informações sobre processos e kernel.</p>
+                    <p style="margin-top: 10px;">Não são arquivos reais — são gerados na hora!</p>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Ver informações da CPU</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /proc/cpuinfo | head -5</span><br>
+                <span class="output">processor : 0</span><br>
+                <span class="output">model name : Intel Core i7...</span><br><br>
+                <span class="comment"># Ver memória</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /proc/meminfo | head -3</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: /boot, /root, /media -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📦 Outros Diretórios</h2>
+            <div class="grid-3">
+                <div class="content-box box-info" style="text-align: center;">
+                    <div class="dir-icon">🚀</div>
+                    <h3>/boot</h3>
+                    <p>Arquivos de <strong>inicialização</strong>.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Kernel, GRUB, initrd</p>
+                </div>
+                <div class="content-box box-warning" style="text-align: center;">
+                    <div class="dir-icon">👑</div>
+                    <h3>/root</h3>
+                    <p>Home do <strong>superusuário</strong>.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Não fica em /home!</p>
+                </div>
+                <div class="content-box box-success" style="text-align: center;">
+                    <div class="dir-icon">💿</div>
+                    <h3>/media</h3>
+                    <p>Mídias <strong>removíveis</strong>.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Pendrive, CD, HD externo</p>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-highlight">
+                    <h3>📂 /mnt</h3>
+                    <p>Ponto de montagem <strong>temporário</strong> para discos. Usado manualmente pelo admin.</p>
+                </div>
+                <div class="content-box box-info">
+                    <h3>📦 /opt</h3>
+                    <p>Programas <strong>opcionais</strong> de terceiros. Ex: Google Chrome, Zoom, etc.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Resumo Visual -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Mapa Mental</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">/home</div>
+                    <h4>🏠 Usuários</h4>
+                    <p>Suas pastas pessoais</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">/etc</div>
+                    <h4>⚙️ Configs</h4>
+                    <p>Configurações</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">/var</div>
+                    <h4>📊 Variáveis</h4>
+                    <p>Logs, sites, cache</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">/bin</div>
+                    <h4>⚡ Programas</h4>
+                    <p>Comandos básicos</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">/dev</div>
+                    <h4>🔌 Devices</h4>
+                    <p>Hardware</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">/tmp</div>
+                    <h4>🗑️ Temporário</h4>
+                    <p>Apagado no boot</p>
+                </div>
+            </div>
+            <div class="content-box box-success" style="margin-top: 30px; text-align: center;">
+                <h3>🎯 Regra de Ouro</h3>
+                <p style="font-size: 1.1em;">Seus arquivos → <code>/home</code> | Configs → <code>/etc</code> | Logs → <code>/var/log</code></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center;">Arraste os diretórios para suas funções!</p>
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Pastas pessoais dos usuários</div>
+                        <div class="drop-zone" data-correct="/home">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Configurações do sistema</div>
+                        <div class="drop-zone" data-correct="/etc">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Logs e dados variáveis</div>
+                        <div class="drop-zone" data-correct="/var">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Dispositivos de hardware</div>
+                        <div class="drop-zone" data-correct="/dev">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Arquivos temporários</div>
+                        <div class="drop-zone" data-correct="/tmp">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Comandos essenciais</div>
+                        <div class="drop-zone" data-correct="/bin">Arraste aqui</div>
+                    </div>
+                </div>
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🏗️</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns!</h2>
+                <div class="content-box box-success" style="max-width: 700px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">O que é FHS</div>
+                            <div class="bullet-point">/home → Usuários</div>
+                            <div class="bullet-point">/etc → Configurações</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">/var → Logs e dados</div>
+                            <div class="bullet-point">/dev → Dispositivos</div>
+                            <div class="bullet-point">/tmp → Temporários</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-highlight" style="max-width: 700px; margin-top: 20px;">
+                    <h3>🔜 Na próxima aula:</h3>
+                    <p>Vamos aprender sobre <strong>Navegação no Terminal</strong>! Comandos cd, ls, pwd e mais.</p>
+                </div>
+                <div class="content-box box-info" style="max-width: 700px; margin-top: 20px;">
+                    <h3>💡 Explore!</h3>
+                    <p>Use <code>ls /</code> e navegue pelos diretórios para fixar o conteúdo!</p>
+                </div>
+                <div style="margin-top: 40px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: '/home', text: '/home' },
+            { id: '/etc', text: '/etc' },
+            { id: '/var', text: '/var' },
+            { id: '/dev', text: '/dev' },
+            { id: '/tmp', text: '/tmp' },
+            { id: '/bin', text: '/bin' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            shuffleArray([...answersData]).forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
+                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você conhece o FHS!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
+            else resultDiv.innerHTML += '<p>📚 Revise os diretórios!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+        initQuiz();
+    </script>
+</body>
+</html>
