@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 10 - Projeto Prático: Servidor Web</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+            --accent-orange: #f39c12;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h3 { color: var(--primary); margin: 15px 0 10px; font-size: 1.3em; }
+        .content-box {
+            padding: 18px;
+            border-radius: 12px;
+            margin: 12px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            line-height: 1.7;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .root { color: #fc8181; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .box-terminal .file { color: #63b3ed; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "🔧";
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        .section-divider {
+            text-align: center;
+            padding: 12px;
+            margin: 15px 0;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        .step-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--primary);
+            text-align: center;
+        }
+        .step-card .step-num {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0 auto 15px;
+        }
+        .step-card h4 { color: var(--text-dark); margin-bottom: 8px; }
+        .step-card p { font-size: 0.9em; color: var(--text-light); }
+        .checklist {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .checklist-item:last-child { border-bottom: none; }
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+        .checklist-item label { cursor: pointer; flex: 1; }
+        .checklist-item .aula-ref {
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            margin-left: 10px;
+        }
+        .server-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .server-box {
+            padding: 20px 30px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+            min-width: 120px;
+        }
+        .arrow { font-size: 2em; color: var(--primary); }
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+        .mission-badge {
+            background: linear-gradient(135deg, var(--accent-orange), #e67e22);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .mission-badge h3 { color: white; margin: 0 0 5px 0; }
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .file-content {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .file-content .tag { color: #fc8181; }
+        .file-content .attr { color: #f6e05e; }
+        .file-content .value { color: #38ef7d; }
+        .file-content .comment { color: #718096; }
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .server-diagram { flex-direction: column; }
+            .arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn"><span>←</span> Voltar</a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 10 - Projeto Final</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">🏆</div>
+                <h1 class="slide-title">Projeto Final: Servidor Web</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Configure um servidor completo do zero!</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Aplicando tudo que você aprendeu no bimestre</p>
+                </div>
+                
+                <div class="server-diagram" style="margin-top: 30px;">
+                    <div class="server-box" style="background: #dbeafe; color: #1e40af;">
+                        👥 Usuários<br><small>Aula 04</small>
+                    </div>
+                    <div class="server-box" style="background: #d1fae5; color: #065f46;">
+                        🔐 Permissões<br><small>Aula 05</small>
+                    </div>
+                    <div class="server-box" style="background: #fef3c7; color: #92400e;">
+                        📦 Pacotes<br><small>Aula 06</small>
+                    </div>
+                    <div class="server-box" style="background: #fee2e2; color: #991b1b;">
+                        ⚙️ Serviços<br><small>Aula 07</small>
+                    </div>
+                    <div class="server-box" style="background: #e0e7ff; color: #3730a3;">
+                        🔍 Logs<br><small>Aula 09</small>
+                    </div>
+                </div>
+
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Ao final, você terá um <strong>servidor web funcionando</strong> com site próprio!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: Cenário do Projeto -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Cenário do Projeto</h2>
+            <div class="mission-badge">
+                <h3>🎯 SUA MISSÃO</h3>
+                <p>Configurar um servidor web para hospedar o site da empresa "TechCorp"</p>
+            </div>
+            
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📝 Requisitos</h3>
+                    <div class="bullet-point">Servidor Apache funcionando</div>
+                    <div class="bullet-point">2 desenvolvedores com acesso</div>
+                    <div class="bullet-point">Pasta do site com permissões corretas</div>
+                    <div class="bullet-point">Serviço iniciando no boot</div>
+                    <div class="bullet-point">Monitoramento de logs</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🏗️ O que vamos criar</h3>
+                    <div class="bullet-point">Grupo <code>webdev</code></div>
+                    <div class="bullet-point">Usuários <code>dev1</code> e <code>dev2</code></div>
+                    <div class="bullet-point">Site em <code>/var/www/techcorp</code></div>
+                    <div class="bullet-point">Apache configurado</div>
+                    <div class="bullet-point">Script de monitoramento</div>
+                </div>
+            </div>
+
+            <div class="content-box box-highlight" style="margin-top: 15px;">
+                <h3>⏱️ Etapas do Projeto</h3>
+                <div class="progress-bar"><div class="progress-fill" style="width: 0%;"></div></div>
+                <p style="text-align: center;">6 etapas • Aproximadamente 30-40 minutos</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Etapa 1 - Usuários e Grupos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👥 Etapa 1: Usuários e Grupos</h2>
+            <div class="section-divider">Criando a equipe de desenvolvimento</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Criar o grupo da equipe web</span><br>
+                <span class="root">root@server</span>:~# <span class="command">groupadd webdev</span><br><br>
+
+                <span class="comment"># 2. Criar os desenvolvedores</span><br>
+                <span class="root">root@server</span>:~# <span class="command">useradd -m -s /bin/bash -G webdev dev1</span><br>
+                <span class="root">root@server</span>:~# <span class="command">useradd -m -s /bin/bash -G webdev dev2</span><br><br>
+
+                <span class="comment"># 3. Definir senhas</span><br>
+                <span class="root">root@server</span>:~# <span class="command">passwd dev1</span><br>
+                <span class="output">Nova senha: ********</span><br>
+                <span class="root">root@server</span>:~# <span class="command">passwd dev2</span><br>
+                <span class="output">Nova senha: ********</span><br><br>
+
+                <span class="comment"># 4. Verificar</span><br>
+                <span class="root">root@server</span>:~# <span class="command">grep webdev /etc/group</span><br>
+                <span class="output">webdev:x:1001:dev1,dev2</span><br>
+                <span class="root">root@server</span>:~# <span class="command">id dev1</span><br>
+                <span class="output">uid=1001(dev1) gid=1001(dev1) grupos=1001(dev1),1002(webdev)</span>
+            </div>
+
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="c1"><label for="c1">Grupo webdev criado</label><span class="aula-ref">Aula 04</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c2"><label for="c2">Usuários dev1 e dev2 criados</label><span class="aula-ref">Aula 04</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c3"><label for="c3">Usuários no grupo webdev</label><span class="aula-ref">Aula 04</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Etapa 2 - Instalar Apache -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📦 Etapa 2: Instalar o Apache</h2>
+            <div class="section-divider">Instalando o servidor web</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Atualizar lista de pacotes</span><br>
+                <span class="root">root@server</span>:~# <span class="command">apt update</span><br>
+                <span class="output">Atingido:1 http://br.archive.ubuntu.com/ubuntu jammy InRelease</span><br>
+                <span class="output">Lendo lista de pacotes... Pronto</span><br><br>
+
+                <span class="comment"># 2. Instalar Apache</span><br>
+                <span class="root">root@server</span>:~# <span class="command">apt install apache2 -y</span><br>
+                <span class="output">Instalando apache2...</span><br>
+                <span class="output">Processando gatilhos...</span><br><br>
+
+                <span class="comment"># 3. Verificar se está rodando</span><br>
+                <span class="root">root@server</span>:~# <span class="command">systemctl status apache2</span><br>
+                <span class="output">● apache2.service - The Apache HTTP Server</span><br>
+                <span class="output">   Active: <span class="highlight">active (running)</span></span><br><br>
+
+                <span class="comment"># 4. Habilitar no boot</span><br>
+                <span class="root">root@server</span>:~# <span class="command">systemctl enable apache2</span><br>
+                <span class="output">Synchronizing state of apache2.service...</span>
+            </div>
+
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="c4"><label for="c4">apt update executado</label><span class="aula-ref">Aula 06</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c5"><label for="c5">Apache2 instalado</label><span class="aula-ref">Aula 06</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c6"><label for="c6">Serviço rodando (active)</label><span class="aula-ref">Aula 07</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c7"><label for="c7">Habilitado no boot</label><span class="aula-ref">Aula 07</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Etapa 3 - Estrutura do Site -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📁 Etapa 3: Estrutura do Site</h2>
+            <div class="section-divider">Criando pastas e configurando permissões</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Criar diretório do site</span><br>
+                <span class="root">root@server</span>:~# <span class="command">mkdir -p /var/www/techcorp</span><br><br>
+
+                <span class="comment"># 2. Definir dono e grupo</span><br>
+                <span class="root">root@server</span>:~# <span class="command">chown -R root:webdev /var/www/techcorp</span><br><br>
+
+                <span class="comment"># 3. Permissões: dono=rwx, grupo=rwx, outros=rx</span><br>
+                <span class="root">root@server</span>:~# <span class="command">chmod 775 /var/www/techcorp</span><br><br>
+
+                <span class="comment"># 4. SGID para herdar grupo em novos arquivos</span><br>
+                <span class="root">root@server</span>:~# <span class="command">chmod g+s /var/www/techcorp</span><br><br>
+
+                <span class="comment"># 5. Verificar</span><br>
+                <span class="root">root@server</span>:~# <span class="command">ls -ld /var/www/techcorp</span><br>
+                <span class="output">drwxrws<span class="highlight">r-x</span> 2 root <span class="highlight">webdev</span> 4096 jan 20 /var/www/techcorp</span>
+            </div>
+
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>💡 Por que SGID (g+s)?</h3>
+                <p>Com SGID, todo arquivo criado na pasta herda o grupo <code>webdev</code>. Assim, dev1 e dev2 podem editar arquivos um do outro!</p>
+            </div>
+
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="c8"><label for="c8">Pasta /var/www/techcorp criada</label><span class="aula-ref">Aula 03</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c9"><label for="c9">Grupo webdev definido</label><span class="aula-ref">Aula 05</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c10"><label for="c10">Permissão 775 + SGID</label><span class="aula-ref">Aula 05</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Etapa 4 - Criar o Site -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🌐 Etapa 4: Criar o Site</h2>
+            <div class="section-divider">Criando a página HTML</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># Criar arquivo index.html</span><br>
+                <span class="root">root@server</span>:~# <span class="command">nano /var/www/techcorp/index.html</span>
+            </div>
+
+            <div class="file-content">
+<span class="tag">&lt;!DOCTYPE html&gt;</span>
+<span class="tag">&lt;html</span> <span class="attr">lang=</span><span class="value">"pt-BR"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;head&gt;</span>
+    <span class="tag">&lt;meta</span> <span class="attr">charset=</span><span class="value">"UTF-8"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;title&gt;</span>TechCorp - Bem-vindo!<span class="tag">&lt;/title&gt;</span>
+    <span class="tag">&lt;style&gt;</span>
+        body { font-family: Arial; text-align: center; padding: 50px; }
+        h1 { color: #667eea; }
+    <span class="tag">&lt;/style&gt;</span>
+<span class="tag">&lt;/head&gt;</span>
+<span class="tag">&lt;body&gt;</span>
+    <span class="tag">&lt;h1&gt;</span>🚀 TechCorp<span class="tag">&lt;/h1&gt;</span>
+    <span class="tag">&lt;p&gt;</span>Servidor configurado com sucesso!<span class="tag">&lt;/p&gt;</span>
+    <span class="tag">&lt;p&gt;</span>Servidor Linux - Projeto Final<span class="tag">&lt;/p&gt;</span>
+<span class="tag">&lt;/body&gt;</span>
+<span class="tag">&lt;/html&gt;</span>
+            </div>
+
+            <div class="box-terminal" style="margin-top: 15px;">
+                <span class="comment"># Ajustar permissão do arquivo</span><br>
+                <span class="root">root@server</span>:~# <span class="command">chmod 664 /var/www/techcorp/index.html</span><br><br>
+
+                <span class="comment"># Verificar</span><br>
+                <span class="root">root@server</span>:~# <span class="command">ls -l /var/www/techcorp/</span><br>
+                <span class="output">-rw-rw-r-- 1 root webdev 450 jan 20 index.html</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Etapa 5 - Configurar VirtualHost -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚙️ Etapa 5: Configurar VirtualHost</h2>
+            <div class="section-divider">Apontando Apache para nosso site</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Criar arquivo de configuração do site</span><br>
+                <span class="root">root@server</span>:~# <span class="command">nano /etc/apache2/sites-available/techcorp.conf</span>
+            </div>
+
+            <div class="file-content">
+<span class="tag">&lt;VirtualHost</span> <span class="attr">*:80</span><span class="tag">&gt;</span>
+    <span class="attr">ServerName</span> <span class="value">techcorp.local</span>
+    <span class="attr">ServerAlias</span> <span class="value">www.techcorp.local</span>
+    <span class="attr">DocumentRoot</span> <span class="value">/var/www/techcorp</span>
+    
+    <span class="tag">&lt;Directory</span> <span class="value">/var/www/techcorp</span><span class="tag">&gt;</span>
+        <span class="attr">AllowOverride</span> <span class="value">All</span>
+        <span class="attr">Require</span> <span class="value">all granted</span>
+    <span class="tag">&lt;/Directory&gt;</span>
+    
+    <span class="attr">ErrorLog</span> <span class="value">${APACHE_LOG_DIR}/techcorp_error.log</span>
+    <span class="attr">CustomLog</span> <span class="value">${APACHE_LOG_DIR}/techcorp_access.log combined</span>
+<span class="tag">&lt;/VirtualHost&gt;</span>
+            </div>
+
+            <div class="box-terminal" style="margin-top: 15px;">
+                <span class="comment"># 2. Habilitar o site</span><br>
+                <span class="root">root@server</span>:~# <span class="command">a2ensite techcorp.conf</span><br>
+                <span class="output">Enabling site techcorp.</span><br><br>
+
+                <span class="comment"># 3. Desabilitar site padrão (opcional)</span><br>
+                <span class="root">root@server</span>:~# <span class="command">a2dissite 000-default.conf</span><br><br>
+
+                <span class="comment"># 4. Testar configuração</span><br>
+                <span class="root">root@server</span>:~# <span class="command">apache2ctl configtest</span><br>
+                <span class="output">Syntax OK</span><br><br>
+
+                <span class="comment"># 5. Reiniciar Apache</span><br>
+                <span class="root">root@server</span>:~# <span class="command">systemctl reload apache2</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Testar o Site -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🧪 Testando o Site</h2>
+            <div class="section-divider">Verificando se tudo funciona!</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Adicionar entrada no /etc/hosts (para teste local)</span><br>
+                <span class="root">root@server</span>:~# <span class="command">echo "127.0.0.1 techcorp.local" >> /etc/hosts</span><br><br>
+
+                <span class="comment"># 2. Testar com curl</span><br>
+                <span class="root">root@server</span>:~# <span class="command">curl http://techcorp.local</span><br>
+                <span class="output">&lt;!DOCTYPE html&gt;</span><br>
+                <span class="output">&lt;html lang="pt-BR"&gt;</span><br>
+                <span class="output">...</span><br>
+                <span class="output"><span class="highlight">🚀 TechCorp</span></span><br><br>
+
+                <span class="comment"># 3. Ou testar pelo IP</span><br>
+                <span class="root">root@server</span>:~# <span class="command">curl http://localhost</span><br><br>
+
+                <span class="comment"># 4. Ver se Apache está escutando na porta 80</span><br>
+                <span class="root">root@server</span>:~# <span class="command">ss -tlnp | grep :80</span><br>
+                <span class="output">LISTEN  0  511  *:80  *:*  users:(("apache2",pid=1234))</span>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 15px;">
+                <h3>✅ Site funcionando!</h3>
+                <p>Abra o navegador e acesse <code>http://IP-DO-SERVIDOR</code> para ver seu site!</p>
+            </div>
+
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="c11"><label for="c11">VirtualHost configurado</label><span class="aula-ref">Aula 07</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c12"><label for="c12">Site habilitado (a2ensite)</label><span class="aula-ref">Aula 07</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c13"><label for="c13">Teste com curl OK</label><span class="aula-ref">Aula 03</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: Etapa 6 - Monitoramento de Logs -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔍 Etapa 6: Monitoramento de Logs</h2>
+            <div class="section-divider">Acompanhando acessos e erros</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Ver logs de acesso em tempo real</span><br>
+                <span class="root">root@server</span>:~# <span class="command">tail -f /var/log/apache2/techcorp_access.log</span><br>
+                <span class="output">192.168.1.100 - - [20/Jan/2025:14:30:15] "GET / HTTP/1.1" 200 450</span><br>
+                <span class="output">192.168.1.101 - - [20/Jan/2025:14:30:18] "GET /style.css HTTP/1.1" 404 492</span><br><br>
+
+                <span class="comment"># 2. Ver erros</span><br>
+                <span class="root">root@server</span>:~# <span class="command">tail -20 /var/log/apache2/techcorp_error.log</span><br><br>
+
+                <span class="comment"># 3. Contar acessos por IP (usando awk!)</span><br>
+                <span class="root">root@server</span>:~# <span class="command">awk '{print $1}' /var/log/apache2/techcorp_access.log | sort | uniq -c | sort -rn</span><br>
+                <span class="output">  45 192.168.1.100</span><br>
+                <span class="output">  23 192.168.1.101</span><br>
+                <span class="output">  12 10.0.0.50</span><br><br>
+
+                <span class="comment"># 4. Filtrar erros 404 (página não encontrada)</span><br>
+                <span class="root">root@server</span>:~# <span class="command">grep " 404 " /var/log/apache2/techcorp_access.log</span>
+            </div>
+
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="c14"><label for="c14">Logs sendo gerados</label><span class="aula-ref">Aula 07</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c15"><label for="c15">tail -f funcionando</label><span class="aula-ref">Aula 03</span>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c16"><label for="c16">Análise com awk/grep</label><span class="aula-ref">Aula 09</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Script de Relatório -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📊 Bônus: Script de Relatório</h2>
+            <div class="section-divider">Automatizando a análise de logs</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># Criar script de relatório</span><br>
+                <span class="root">root@server</span>:~# <span class="command">nano /usr/local/bin/relatorio-web.sh</span>
+            </div>
+
+            <div class="file-content">
+<span class="comment">#!/bin/bash</span>
+<span class="comment"># Relatório do servidor TechCorp</span>
+
+LOG="/var/log/apache2/techcorp_access.log"
+
+echo "========================================"
+echo "   RELATÓRIO DO SERVIDOR TECHCORP"
+echo "   $(date '+%d/%m/%Y %H:%M')"
+echo "========================================"
+echo ""
+echo "📊 Total de acessos: $(wc -l < $LOG)"
+echo ""
+echo "🔝 Top 5 IPs que mais acessaram:"
+awk '{print $1}' $LOG | sort | uniq -c | sort -rn | head -5
+echo ""
+echo "📄 Páginas mais acessadas:"
+awk '{print $7}' $LOG | sort | uniq -c | sort -rn | head -5
+echo ""
+echo "❌ Erros 404 (não encontrado): $(grep -c ' 404 ' $LOG)"
+echo "❌ Erros 500 (servidor): $(grep -c ' 500 ' $LOG)"
+echo ""
+echo "⚙️ Status do Apache: $(systemctl is-active apache2)"
+echo "========================================"
+            </div>
+
+            <div class="box-terminal" style="margin-top: 15px;">
+                <span class="comment"># Dar permissão de execução</span><br>
+                <span class="root">root@server</span>:~# <span class="command">chmod +x /usr/local/bin/relatorio-web.sh</span><br><br>
+
+                <span class="comment"># Executar!</span><br>
+                <span class="root">root@server</span>:~# <span class="command">relatorio-web.sh</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Teste como Desenvolvedor -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👨‍💻 Teste: Acesso como Desenvolvedor</h2>
+            <div class="section-divider">Verificando se dev1 e dev2 conseguem trabalhar</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Logar como dev1</span><br>
+                <span class="root">root@server</span>:~# <span class="command">su - dev1</span><br><br>
+
+                <span class="comment"># 2. Ir para pasta do site</span><br>
+                <span class="prompt">dev1@server</span>:~$ <span class="command">cd /var/www/techcorp</span><br><br>
+
+                <span class="comment"># 3. Criar um arquivo</span><br>
+                <span class="prompt">dev1@server</span>:/var/www/techcorp$ <span class="command">echo "&lt;p&gt;Criado por dev1&lt;/p&gt;" > teste-dev1.html</span><br><br>
+
+                <span class="comment"># 4. Verificar permissões (grupo deve ser webdev!)</span><br>
+                <span class="prompt">dev1@server</span>:/var/www/techcorp$ <span class="command">ls -l</span><br>
+                <span class="output">-rw-rw-r-- 1 dev1 <span class="highlight">webdev</span> 25 jan 20 teste-dev1.html</span><br>
+                <span class="output">-rw-rw-r-- 1 root webdev 450 jan 20 index.html</span><br><br>
+
+                <span class="comment"># 5. Sair e testar com dev2</span><br>
+                <span class="prompt">dev1@server</span>:~$ <span class="command">exit</span><br>
+                <span class="root">root@server</span>:~# <span class="command">su - dev2</span><br>
+                <span class="prompt">dev2@server</span>:~$ <span class="command">echo "Editado por dev2" >> /var/www/techcorp/teste-dev1.html</span><br>
+                <span class="comment"># ✅ Funciona! dev2 consegue editar arquivo de dev1</span>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 15px;">
+                <h3>✅ Permissões funcionando!</h3>
+                <p>O SGID garante que ambos desenvolvedores possam colaborar nos mesmos arquivos!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Checklist Final -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">✅ Checklist Final do Projeto</h2>
+            
+            <div class="grid-2">
+                <div class="checklist" style="background: #f0fdf4;">
+                    <h3 style="color: #065f46; margin-bottom: 15px;">👥 Usuários (Aula 04)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f1"><label for="f1">Grupo webdev criado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f2"><label for="f2">Usuário dev1 criado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f3"><label for="f3">Usuário dev2 criado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f4"><label for="f4">Ambos no grupo webdev</label></div>
+                </div>
+                <div class="checklist" style="background: #f4f7fe;">
+                    <h3 style="color: #1e40af; margin-bottom: 15px;">🔐 Permissões (Aula 05)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f5"><label for="f5">Pasta com grupo webdev</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f6"><label for="f6">Permissão 775</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f7"><label for="f7">SGID ativado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f8"><label for="f8">dev1 e dev2 podem editar</label></div>
+                </div>
+                <div class="checklist" style="background: #fffaf0;">
+                    <h3 style="color: #92400e; margin-bottom: 15px;">📦 Pacotes (Aula 06)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f9"><label for="f9">apt update executado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f10"><label for="f10">Apache2 instalado</label></div>
+                </div>
+                <div class="checklist" style="background: #fee2e2;">
+                    <h3 style="color: #991b1b; margin-bottom: 15px;">⚙️ Serviços (Aula 07)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f11"><label for="f11">Apache rodando</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f12"><label for="f12">Habilitado no boot</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f13"><label for="f13">VirtualHost configurado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f14"><label for="f14">Site acessível</label></div>
+                </div>
+            </div>
+
+            <div class="content-box box-highlight" style="margin-top: 20px; text-align: center;">
+                <h3>🎯 Meta: Todos os itens marcados!</h3>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Comandos Utilizados -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos do Projeto</h2>
+            
+            <div class="grid-3">
+                <div class="content-box box-info" style="padding: 12px;">
+                    <h3 style="font-size: 1.1em;">👥 Usuários</h3>
+                    <p style="font-family: monospace; font-size: 0.85em;">
+                        groupadd<br>
+                        useradd -m -G<br>
+                        passwd<br>
+                        id
+                    </p>
+                </div>
+                <div class="content-box box-success" style="padding: 12px;">
+                    <h3 style="font-size: 1.1em;">🔐 Permissões</h3>
+                    <p style="font-family: monospace; font-size: 0.85em;">
+                        chown<br>
+                        chmod 775<br>
+                        chmod g+s<br>
+                        ls -l
+                    </p>
+                </div>
+                <div class="content-box box-highlight" style="padding: 12px;">
+                    <h3 style="font-size: 1.1em;">📦 Pacotes</h3>
+                    <p style="font-family: monospace; font-size: 0.85em;">
+                        apt update<br>
+                        apt install<br>
+                        dpkg -l
+                    </p>
+                </div>
+                <div class="content-box box-warning" style="padding: 12px;">
+                    <h3 style="font-size: 1.1em;">⚙️ Serviços</h3>
+                    <p style="font-family: monospace; font-size: 0.85em;">
+                        systemctl start<br>
+                        systemctl enable<br>
+                        systemctl status<br>
+                        systemctl reload
+                    </p>
+                </div>
+                <div class="content-box box-info" style="padding: 12px;">
+                    <h3 style="font-size: 1.1em;">🌐 Apache</h3>
+                    <p style="font-family: monospace; font-size: 0.85em;">
+                        a2ensite<br>
+                        a2dissite<br>
+                        apache2ctl
+                    </p>
+                </div>
+                <div class="content-box box-success" style="padding: 12px;">
+                    <h3 style="font-size: 1.1em;">🔍 Logs</h3>
+                    <p style="font-family: monospace; font-size: 0.85em;">
+                        tail -f<br>
+                        grep<br>
+                        awk<br>
+                        sort | uniq -c
+                    </p>
+                </div>
+            </div>
+
+            <div class="content-box box-highlight" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1.1em;">🏆 Você usou conhecimentos de <strong>6 aulas</strong> em um único projeto!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🏆</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Projeto Concluído!</h2>
+                
+                <div class="content-box box-success" style="max-width: 800px;">
+                    <h3>🚀 O que você construiu:</h3>
+                    <div class="server-diagram" style="margin: 20px 0;">
+                        <div class="server-box" style="background: #d1fae5; color: #065f46;">
+                            🌐 Servidor Web<br>Apache2
+                        </div>
+                        <div class="server-box" style="background: #dbeafe; color: #1e40af;">
+                            👥 2 Devs<br>Colaborando
+                        </div>
+                        <div class="server-box" style="background: #fef3c7; color: #92400e;">
+                            🔐 Seguro<br>Permissões OK
+                        </div>
+                        <div class="server-box" style="background: #e0e7ff; color: #3730a3;">
+                            📊 Monitorado<br>Logs ativos
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-box box-highlight" style="max-width: 800px; margin-top: 20px;">
+                    <h3>📚 Aulas aplicadas neste projeto:</h3>
+                    <p style="margin-top: 10px;">
+                        <span style="background: var(--primary); color: white; padding: 5px 10px; border-radius: 15px; margin: 3px; display: inline-block;">Aula 03 - Comandos</span>
+                        <span style="background: var(--primary); color: white; padding: 5px 10px; border-radius: 15px; margin: 3px; display: inline-block;">Aula 04 - Usuários</span>
+                        <span style="background: var(--primary); color: white; padding: 5px 10px; border-radius: 15px; margin: 3px; display: inline-block;">Aula 05 - Permissões</span>
+                        <span style="background: var(--primary); color: white; padding: 5px 10px; border-radius: 15px; margin: 3px; display: inline-block;">Aula 06 - Pacotes</span>
+                        <span style="background: var(--primary); color: white; padding: 5px 10px; border-radius: 15px; margin: 3px; display: inline-block;">Aula 07 - Serviços</span>
+                        <span style="background: var(--primary); color: white; padding: 5px 10px; border-radius: 15px; margin: 3px; display: inline-block;">Aula 09 - Regex/Logs</span>
+                    </p>
+                </div>
+
+                <div class="content-box box-info" style="max-width: 800px; margin-top: 20px;">
+                    <h3>💼 Habilidades de SysAdmin adquiridas!</h3>
+                    <p>Você está pronto para administrar servidores Linux no mundo real!</p>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // Salvar estado dos checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            const saved = localStorage.getItem(cb.id);
+            if (saved === 'true') cb.checked = true;
+            cb.addEventListener('change', () => {
+                localStorage.setItem(cb.id, cb.checked);
+            });
+        });
+    </script>
+</body>
+</html>
