@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 07 - Processos e Serviços</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h3 { color: var(--primary); margin: 15px 0 10px; font-size: 1.3em; }
+        .content-box {
+            padding: 18px;
+            border-radius: 12px;
+            margin: 12px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1em;
+            line-height: 1.7;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .root { color: #fc8181; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "⚙️";
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        .command-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.3em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 5px; font-size: 0.95em; }
+        .command-card p { font-size: 0.8em; color: var(--text-light); }
+        .section-divider {
+            text-align: center;
+            padding: 12px;
+            margin: 15px 0;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        .process-states {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .state-badge {
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            min-width: 100px;
+        }
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .signal-box {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            color: white;
+        }
+        .signal-box .num { font-size: 1.8em; font-weight: bold; }
+        .signal-box .name { font-size: 0.9em; opacity: 0.9; }
+        .top-simulation {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .top-header { color: #00ffff; }
+        .top-highlight { color: #ffff00; }
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .drag-drop-container { display: flex; gap: 25px; margin-top: 15px; }
+        .col-questions, .col-answers { flex: 1; }
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 6px; color: var(--text-dark); font-size: 0.9em; }
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.85em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+        .quiz-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .signal-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn"><span>←</span> Voltar</a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 07</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">⚙️</div>
+                <h1 class="slide-title">Processos e Serviços</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Monitoramento, Controle e Gerenciamento</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Domine o que roda no seu sistema!</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 650px;">
+                    <span class="prompt">usuario@linux</span>:~$ <span class="command">ps aux | head -4</span><br>
+                    <span class="output">USER   PID %CPU %MEM COMMAND</span><br>
+                    <span class="output">root     1  0.0  0.1 /sbin/init</span><br>
+                    <span class="output">mysql 2156  1.2  5.4 mysqld</span><br>
+                    <span class="comment"># Veja tudo que está rodando! 🔍</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Aprenda a controlar processos como um verdadeiro SysAdmin!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que é um Processo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 O que é um Processo?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p style="font-size: 1.2em;"><strong>Processo = Programa em execução</strong></p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📦 Programa vs Processo</h3>
+                    <div class="bullet-point"><strong>Programa:</strong> Arquivo no disco (estático)</div>
+                    <div class="bullet-point"><strong>Processo:</strong> Rodando na memória (dinâmico)</div>
+                    <p style="margin-top: 10px;"><strong>Analogia:</strong> Programa é a receita, processo é o bolo sendo feito!</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🔢 Cada Processo Tem:</h3>
+                    <div class="bullet-point"><strong>PID:</strong> ID único do processo</div>
+                    <div class="bullet-point"><strong>PPID:</strong> PID do processo pai</div>
+                    <div class="bullet-point"><strong>Dono:</strong> Usuário que iniciou</div>
+                    <div class="bullet-point"><strong>Estado:</strong> Rodando, dormindo...</div>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 15px;">
+                <span class="comment"># Ver árvore de processos (quem é pai de quem)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">pstree</span><br>
+                <span class="output">systemd─┬─apache2───5*[apache2]</span><br>
+                <span class="output">        ├─sshd───sshd───bash───pstree</span><br>
+                <span class="output">        └─mysql───mysqld</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Estados dos Processos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔄 Estados dos Processos</h2>
+            <div class="process-states">
+                <div class="state-badge" style="background: linear-gradient(135deg, #38ef7d, #11998e);">
+                    🏃 Running (R)<br><small>Executando</small>
+                </div>
+                <div class="state-badge" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    😴 Sleeping (S)<br><small>Esperando</small>
+                </div>
+                <div class="state-badge" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    ⏸️ Stopped (T)<br><small>Pausado</small>
+                </div>
+                <div class="state-badge" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                    🧟 Zombie (Z)<br><small>Terminado</small>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top: 15px;">
+                <div class="content-box box-info">
+                    <h3>📊 Ciclo de Vida</h3>
+                    <p><strong>Novo</strong> → <strong>Pronto</strong> → <strong>Executando</strong> → <strong>Esperando</strong> → <strong>Terminado</strong></p>
+                    <p style="margin-top: 10px;">Processos alternam entre estados conforme usam CPU e esperam recursos.</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🧟 Processo Zombie?</h3>
+                    <p>Não se preocupe! São apenas "registros" de processos que terminaram.</p>
+                    <p style="margin-top: 10px;">Usam poucos recursos e o sistema limpa automaticamente.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Comando ps -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Comando ps - Listando Processos</h2>
+            <div class="box-terminal">
+                <span class="comment"># TODOS os processos do sistema (mais usado!)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ps aux</span><br>
+                <span class="output">USER       PID %CPU %MEM  STAT COMMAND</span><br>
+                <span class="output">root         1  0.0  0.1  Ss   /sbin/init</span><br>
+                <span class="output">www-data  1423  0.5  2.1  S    apache2</span><br>
+                <span class="output">mysql     2156  1.2  5.4  Sl   mysqld</span><br><br>
+
+                <span class="comment"># Buscar processo específico</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ps aux | grep apache</span><br>
+                <span class="output">www-data  1423  0.5  2.1  S  apache2</span><br><br>
+
+                <span class="comment"># Encontrar PID rapidamente</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">pgrep apache</span><br>
+                <span class="output">1423</span>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>📊 Colunas Importantes</h3>
+                <div class="grid-4">
+                    <div><strong>PID</strong> - ID do processo</div>
+                    <div><strong>%CPU</strong> - Uso de CPU</div>
+                    <div><strong>%MEM</strong> - Uso de RAM</div>
+                    <div><strong>STAT</strong> - Estado (R,S,T,Z)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: top e htop -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📊 top e htop - Monitoramento em Tempo Real</h2>
+            <div class="top-simulation">
+<span class="top-header">top - 14:32:15 up 5 days, load average: 0.52, 0.58, 0.59</span>
+<span class="top-header">Tasks: 203 total,   1 running, 202 sleeping,   0 zombie</span>
+<span class="top-header">%Cpu:  5.2 us,  2.1 sy, 92.1 id | Mem: 7976M total, 4521M used</span>
+
+  <span class="top-highlight">PID USER      %CPU  %MEM   COMMAND</span>
+ 2156 mysql      5.3  10.2   mysqld
+ 1423 www-data   2.1   4.1   apache2
+ 3456 usuario    1.0   2.1   firefox
+            </div>
+            <div class="grid-2" style="margin-top: 15px;">
+                <div class="content-box box-info">
+                    <h3>⌨️ Atalhos no top</h3>
+                    <div class="bullet-point"><strong>P</strong> - Ordenar por CPU</div>
+                    <div class="bullet-point"><strong>M</strong> - Ordenar por Memória</div>
+                    <div class="bullet-point"><strong>k</strong> - Matar processo</div>
+                    <div class="bullet-point"><strong>q</strong> - Sair</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🎨 htop (Melhorado!)</h3>
+                    <p>Interface colorida com mouse!</p>
+                    <div class="box-terminal" style="padding: 10px; margin-top: 8px; font-size: 0.9em;">
+                        <span class="command">sudo apt install htop</span><br>
+                        <span class="command">htop</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: kill - Sinais -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">💀 Comando kill - Enviando Sinais</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p><strong>kill</strong> não é só "matar" - é enviar <strong>sinais</strong> para processos!</p>
+            </div>
+            <div class="signal-grid">
+                <div class="signal-box" style="background: linear-gradient(135deg, #38ef7d, #11998e);">
+                    <div class="num">15</div>
+                    <div class="name">SIGTERM</div>
+                    <small>"Termine, por favor"</small>
+                </div>
+                <div class="signal-box" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                    <div class="num">9</div>
+                    <div class="name">SIGKILL</div>
+                    <small>"MORRA AGORA!"</small>
+                </div>
+                <div class="signal-box" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    <div class="num">1</div>
+                    <div class="name">SIGHUP</div>
+                    <small>"Recarregue config"</small>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 15px;">
+                <span class="comment"># Terminar educadamente (SIGTERM - padrão)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">kill 1234</span><br><br>
+                <span class="comment"># Forçar término (SIGKILL) - último recurso!</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">kill -9 1234</span><br><br>
+                <span class="comment"># Matar pelo nome</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">killall firefox</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Foreground e Background -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔄 Foreground e Background</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📺 Foreground (Frente)</h3>
+                    <div class="bullet-point">Ocupa o terminal</div>
+                    <div class="bullet-point">Você vê a saída</div>
+                    <div class="bullet-point">Ctrl+C para parar</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🌙 Background (Fundo)</h3>
+                    <div class="bullet-point">Libera o terminal</div>
+                    <div class="bullet-point">Use <code>&</code> no final</div>
+                    <div class="bullet-point">Pode ter vários</div>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 15px;">
+                <span class="comment"># Rodar em background</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cp arquivo_grande.iso /backup/ &</span><br>
+                <span class="output">[1] 5678</span><br><br>
+                <span class="comment"># Ctrl+Z pausa, bg continua em background</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">bg</span><br><br>
+                <span class="comment"># fg traz de volta para foreground</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">fg</span>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 15px;">
+                <h3>💡 nohup - Sobrevive ao logout</h3>
+                <p><code>nohup ./script_longo.sh &</code> → Continua rodando mesmo se você fechar o terminal!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: nice e renice -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚖️ nice e renice - Prioridades</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p><strong>nice</strong> = "gentileza" → Quanto maior, <strong>menos</strong> prioridade!</p>
+                <p style="margin-top: 5px;">Escala: <strong>-20</strong> (máxima) até <strong>+19</strong> (mínima) | Padrão: <strong>0</strong></p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🚀 nice (ao iniciar)</h3>
+                    <div class="box-terminal" style="padding: 10px; font-size: 0.9em;">
+                        <span class="comment"># Baixa prioridade</span><br>
+                        <span class="command">nice -n 10 tar -czf backup.tar.gz /home</span><br><br>
+                        <span class="comment"># Alta prioridade (só root)</span><br>
+                        <span class="command">sudo nice -n -10 ./importante</span>
+                    </div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🔧 renice (já rodando)</h3>
+                    <div class="box-terminal" style="padding: 10px; font-size: 0.9em;">
+                        <span class="comment"># Mudar prioridade do PID 1234</span><br>
+                        <span class="command">renice -n 5 -p 1234</span><br>
+                        <span class="output">old priority 0, new priority 5</span>
+                    </div>
+                </div>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <p>⚠️ Só <strong>root</strong> pode aumentar prioridade (nice negativo). Usuários comuns só podem diminuir.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: systemctl - Serviços -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 systemctl - Gerenciando Serviços</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p><strong>Serviços (daemons)</strong> são processos que rodam em background</p>
+                <p>Apache, MySQL, SSH, etc. são gerenciados pelo <strong>systemd</strong></p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Ver status de um serviço</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl status apache2</span><br>
+                <span class="output">● apache2.service - The Apache HTTP Server</span><br>
+                <span class="output">   Active: <span class="highlight">active (running)</span></span><br><br>
+
+                <span class="comment"># Controlar serviços</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl start apache2</span>   <span class="comment"># Iniciar</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl stop apache2</span>    <span class="comment"># Parar</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl restart apache2</span> <span class="comment"># Reiniciar</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl reload apache2</span>  <span class="comment"># Recarregar config</span><br><br>
+
+                <span class="comment"># Habilitar/Desabilitar no boot</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl enable apache2</span>  <span class="comment"># Inicia no boot</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl disable apache2</span> <span class="comment"># Não inicia no boot</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Mais comandos systemctl -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 systemctl - Comandos Úteis</h2>
+            <div class="box-terminal">
+                <span class="comment"># Listar todos os serviços</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl list-units --type=service</span><br><br>
+
+                <span class="comment"># Ver serviços ativos</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl list-units --type=service --state=active</span><br><br>
+
+                <span class="comment"># Ver serviços com falha</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl --failed</span><br><br>
+
+                <span class="comment"># Ver logs de um serviço</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">journalctl -u apache2</span><br><br>
+
+                <span class="comment"># Verificar se está habilitado no boot</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">systemctl is-enabled apache2</span><br>
+                <span class="output">enabled</span>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>💡 start vs enable</h3>
+                <p><strong>start/stop:</strong> Controla AGORA | <strong>enable/disable:</strong> Controla no BOOT</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Caso Prático -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Caso Prático: Servidor Lento</h2>
+            <div class="content-box box-warning" style="text-align: center; margin-bottom: 15px;">
+                <p>😱 O servidor está lento! Como investigar?</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># 1. Verificar carga</span><br>
+                <span class="prompt">admin@server</span>:~$ <span class="command">uptime</span><br>
+                <span class="output">load average: <span class="highlight">8.52</span>, 7.21, 5.43</span> <span class="comment"># Alto!</span><br><br>
+
+                <span class="comment"># 2. Quem está consumindo?</span><br>
+                <span class="prompt">admin@server</span>:~$ <span class="command">top -o %CPU</span><br>
+                <span class="output">PID   %CPU COMMAND</span><br>
+                <span class="output"><span class="highlight">9876  95.2 python loop_infinito.py</span></span> <span class="comment"># Vilão!</span><br><br>
+
+                <span class="comment"># 3. Matar o problema</span><br>
+                <span class="prompt">admin@server</span>:~$ <span class="command">kill 9876</span><br><br>
+
+                <span class="comment"># 4. Se não funcionar...</span><br>
+                <span class="prompt">admin@server</span>:~$ <span class="command">kill -9 9876</span><br><br>
+
+                <span class="comment"># 5. Verificar se melhorou</span><br>
+                <span class="prompt">admin@server</span>:~$ <span class="command">uptime</span><br>
+                <span class="output">load average: 0.52, 2.21, 4.43</span> <span class="comment"># Melhorando! ✅</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Resumo dos Comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos Essenciais</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">ps aux</div>
+                    <h4>Listar Processos</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">top</div>
+                    <h4>Monitor Tempo Real</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">kill PID</div>
+                    <h4>Terminar Processo</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">killall</div>
+                    <h4>Matar por Nome</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">bg / fg</div>
+                    <h4>Background/Fore</h4>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">nice</div>
+                    <h4>Prioridade</h4>
+                </div>
+            </div>
+            <div class="section-divider" style="margin-top: 20px;">Serviços (systemctl)</div>
+            <div class="grid-4">
+                <div class="command-card">
+                    <div class="cmd" style="font-size: 1em;">start</div>
+                    <p>Iniciar</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd" style="font-size: 1em;">stop</div>
+                    <p>Parar</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd" style="font-size: 1em;">restart</div>
+                    <p>Reiniciar</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd" style="font-size: 1em;">status</div>
+                    <p>Ver estado</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 10px;">Arraste os comandos para suas funções!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Listar todos os processos</div>
+                        <div class="drop-zone" data-correct="ps aux">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Monitoramento em tempo real</div>
+                        <div class="drop-zone" data-correct="top">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Matar processo forçado</div>
+                        <div class="drop-zone" data-correct="kill -9">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Iniciar um serviço</div>
+                        <div class="drop-zone" data-correct="systemctl start">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Ver status de serviço</div>
+                        <div class="drop-zone" data-correct="systemctl status">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Mudar prioridade</div>
+                        <div class="drop-zone" data-correct="renice">Arraste aqui</div>
+                    </div>
+                </div>
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓⚙️</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns!</h2>
+                <div class="content-box box-success" style="max-width: 750px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Processos e PIDs</div>
+                            <div class="bullet-point">ps, top, htop</div>
+                            <div class="bullet-point">kill e sinais</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">Foreground/Background</div>
+                            <div class="bullet-point">nice e renice</div>
+                            <div class="bullet-point">systemctl (serviços)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-highlight" style="max-width: 750px; margin-top: 20px;">
+                    <h3>🎯 Pratique agora:</h3>
+                    <p style="font-family: monospace; font-size: 1em; margin-top: 10px;">
+                        <code>ps aux | grep bash && top -d 1</code>
+                    </p>
+                    <p style="margin-top: 10px;">Lista processos bash e abre o monitor!</p>
+                </div>
+                <div class="content-box box-warning" style="max-width: 750px; margin-top: 15px;">
+                    <p>💡 <strong>Lembre:</strong> Sempre use <code>kill</code> antes de <code>kill -9</code>!</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: 'ps aux', text: 'ps aux' },
+            { id: 'top', text: 'top' },
+            { id: 'kill -9', text: 'kill -9' },
+            { id: 'systemctl start', text: 'systemctl start' },
+            { id: 'systemctl status', text: 'systemctl status' },
+            { id: 'renice', text: 'renice' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            shuffleArray([...answersData]).forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
+                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina processos!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
+            else resultDiv.innerHTML += '<p>📚 Use top e ps para praticar!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+        initQuiz();
+    </script>
+</body>
+</html>
