@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 08 - Sistema de Arquivos e Montagem</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h3 { color: var(--primary); margin: 15px 0 10px; font-size: 1.3em; }
+        .content-box {
+            padding: 18px;
+            border-radius: 12px;
+            margin: 12px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1em;
+            line-height: 1.7;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .root { color: #fc8181; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .box-terminal .device { color: #63b3ed; }
+        .box-terminal .mount { color: #fc8181; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "💾";
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        .command-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.3em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 5px; font-size: 0.95em; }
+        .command-card p { font-size: 0.8em; color: var(--text-light); }
+        .section-divider {
+            text-align: center;
+            padding: 12px;
+            margin: 15px 0;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        .fs-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--primary);
+        }
+        .fs-card .icon { font-size: 2em; margin-bottom: 8px; }
+        .fs-card h4 { color: var(--primary); margin-bottom: 5px; }
+        .fs-card p { font-size: 0.85em; color: var(--text-light); }
+        .fstab-line {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .fstab-line .col1 { color: #63b3ed; }
+        .fstab-line .col2 { color: #fc8181; }
+        .fstab-line .col3 { color: #38ef7d; }
+        .fstab-line .col4 { color: #f6e05e; }
+        .fstab-line .col5 { color: #a0aec0; }
+        .mount-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .mount-box {
+            padding: 20px 30px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .mount-arrow { font-size: 2em; color: var(--primary); }
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .drag-drop-container { display: flex; gap: 25px; margin-top: 15px; }
+        .col-questions, .col-answers { flex: 1; }
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 6px; color: var(--text-dark); font-size: 0.9em; }
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.85em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+        .quiz-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .mount-diagram { flex-direction: column; }
+            .mount-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn"><span>←</span> Voltar</a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 08</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">💾</div>
+                <h1 class="slide-title">Sistema de Arquivos e Montagem</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Conecte discos, pendrives e partições!</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">mount, umount, fstab e tipos de filesystem</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 650px;">
+                    <span class="root">root@linux</span>:~# <span class="command">mount</span> <span class="device">/dev/sdb1</span> <span class="mount">/mnt/pendrive</span><br>
+                    <span class="root">root@linux</span>:~# <span class="command">ls /mnt/pendrive</span><br>
+                    <span class="output">fotos/  documentos/  musicas/</span><br>
+                    <span class="comment"># Pendrive acessível! 🎉</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Aprenda como o Linux acessa discos e dispositivos de armazenamento!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que é Sistema de Arquivos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🗂️ O que é Sistema de Arquivos?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p style="font-size: 1.2em;"><strong>Filesystem</strong> = Como os dados são organizados no disco</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📚 Analogia: Biblioteca</h3>
+                    <p>Imagine uma biblioteca:</p>
+                    <div class="bullet-point"><strong>Disco</strong> = O prédio da biblioteca</div>
+                    <div class="bullet-point"><strong>Filesystem</strong> = Sistema de organização</div>
+                    <div class="bullet-point"><strong>Pastas</strong> = Estantes e prateleiras</div>
+                    <div class="bullet-point"><strong>Arquivos</strong> = Os livros</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🔧 O que define?</h3>
+                    <div class="bullet-point">Tamanho máximo de arquivo</div>
+                    <div class="bullet-point">Tamanho máximo do disco</div>
+                    <div class="bullet-point">Nomes permitidos</div>
+                    <div class="bullet-point">Permissões suportadas</div>
+                    <div class="bullet-point">Journaling (recuperação)</div>
+                </div>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <p>⚠️ <strong>Importante:</strong> Cada partição pode ter um filesystem diferente!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Tipos de Filesystem -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📁 Tipos de Sistema de Arquivos</h2>
+            <div class="grid-3">
+                <div class="fs-card">
+                    <div class="icon">🐧</div>
+                    <h4>ext4</h4>
+                    <p><strong>Padrão Linux</strong></p>
+                    <p>Journaling, até 16TB por arquivo</p>
+                </div>
+                <div class="fs-card">
+                    <div class="icon">🚀</div>
+                    <h4>XFS</h4>
+                    <p><strong>Alta performance</strong></p>
+                    <p>Ótimo para arquivos grandes</p>
+                </div>
+                <div class="fs-card">
+                    <div class="icon">🆕</div>
+                    <h4>Btrfs</h4>
+                    <p><strong>Moderno</strong></p>
+                    <p>Snapshots, compressão</p>
+                </div>
+                <div class="fs-card">
+                    <div class="icon">🪟</div>
+                    <h4>NTFS</h4>
+                    <p><strong>Windows</strong></p>
+                    <p>Compatibilidade total</p>
+                </div>
+                <div class="fs-card">
+                    <div class="icon">📱</div>
+                    <h4>FAT32</h4>
+                    <p><strong>Universal</strong></p>
+                    <p>Pendrives, máx 4GB/arquivo</p>
+                </div>
+                <div class="fs-card">
+                    <div class="icon">🔄</div>
+                    <h4>exFAT</h4>
+                    <p><strong>FAT melhorado</strong></p>
+                    <p>Pendrives grandes</p>
+                </div>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>💡 Qual usar?</h3>
+                <p><strong>Linux interno:</strong> ext4 ou XFS | <strong>Pendrive:</strong> exFAT ou FAT32 | <strong>Dual boot:</strong> NTFS para compartilhar</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: O que é Montagem -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔗 O que é Montagem?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p style="font-size: 1.1em;"><strong>Montar</strong> = Conectar um dispositivo a uma pasta do sistema</p>
+            </div>
+            
+            <div class="mount-diagram">
+                <div class="mount-box" style="background: #dbeafe; color: #1e40af;">
+                    💾 /dev/sdb1<br><small>(dispositivo)</small>
+                </div>
+                <div class="mount-arrow">➡️</div>
+                <div class="mount-box" style="background: #d1fae5; color: #065f46;">
+                    📁 /mnt/pendrive<br><small>(ponto de montagem)</small>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🤔 Por que montar?</h3>
+                    <p>No Linux, dispositivos são arquivos em <code>/dev/</code>:</p>
+                    <div class="bullet-point"><code>/dev/sda</code> → 1º disco</div>
+                    <div class="bullet-point"><code>/dev/sdb</code> → 2º disco (pendrive)</div>
+                    <div class="bullet-point"><code>/dev/sdb1</code> → 1ª partição</div>
+                    <p style="margin-top: 10px;">Para acessar os arquivos, precisamos <strong>montar</strong>!</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>📍 Pontos de montagem</h3>
+                    <div class="bullet-point"><code>/mnt/</code> → Montagem temporária</div>
+                    <div class="bullet-point"><code>/media/</code> → Mídias removíveis</div>
+                    <div class="bullet-point"><code>/home</code> → Pode ser partição separada</div>
+                    <p style="margin-top: 10px;">A pasta deve existir antes de montar!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Comando mount -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 Comando mount</h2>
+            <div class="box-terminal">
+                <span class="comment"># Ver dispositivos disponíveis</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">lsblk</span><br>
+                <span class="output">NAME   SIZE TYPE MOUNTPOINT</span><br>
+                <span class="output">sda    500G disk</span><br>
+                <span class="output">├─sda1 499G part /</span><br>
+                <span class="output">└─sda2   1G part [SWAP]</span><br>
+                <span class="output"><span class="highlight">sdb</span>     16G disk</span><br>
+                <span class="output">└─<span class="highlight">sdb1</span>  16G part</span> <span class="comment"># ← Pendrive!</span><br><br>
+
+                <span class="comment"># Criar ponto de montagem</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mkdir /mnt/pendrive</span><br><br>
+
+                <span class="comment"># Montar o dispositivo</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mount</span> <span class="device">/dev/sdb1</span> <span class="mount">/mnt/pendrive</span><br><br>
+
+                <span class="comment"># Acessar os arquivos!</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">ls /mnt/pendrive</span><br>
+                <span class="output">fotos/  documentos/  backup.zip</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Opções do mount -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚙️ Opções do mount</h2>
+            <div class="box-terminal">
+                <span class="comment"># Montar como somente leitura</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mount -o ro /dev/sdb1 /mnt/pendrive</span><br><br>
+
+                <span class="comment"># Montar especificando o tipo de filesystem</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mount -t ntfs /dev/sdc1 /mnt/windows</span><br><br>
+
+                <span class="comment"># Ver tudo que está montado</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mount</span><br>
+                <span class="output">/dev/sda1 on / type ext4 (rw,relatime)</span><br>
+                <span class="output">/dev/sdb1 on /mnt/pendrive type vfat (rw)</span><br><br>
+
+                <span class="comment"># Verificar espaço em disco</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">df -h</span><br>
+                <span class="output">Filesystem      Size  Used Avail Use% Mounted on</span><br>
+                <span class="output">/dev/sda1       500G  120G  380G  24% /</span><br>
+                <span class="output">/dev/sdb1        16G   8G    8G  50% /mnt/pendrive</span>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>📋 Opções comuns</h3>
+                <div class="grid-4">
+                    <div><code>ro</code> - Somente leitura</div>
+                    <div><code>rw</code> - Leitura/escrita</div>
+                    <div><code>noexec</code> - Não executa</div>
+                    <div><code>nosuid</code> - Ignora SUID</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Comando umount -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⏏️ Comando umount (Desmontar)</h2>
+            <div class="content-box box-warning" style="text-align: center; margin-bottom: 15px;">
+                <p style="font-size: 1.1em;">⚠️ <strong>SEMPRE</strong> desmonte antes de remover o dispositivo!</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Desmontar pelo ponto de montagem</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">umount /mnt/pendrive</span><br><br>
+
+                <span class="comment"># Ou pelo dispositivo</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">umount /dev/sdb1</span><br><br>
+
+                <span class="comment"># Erro: dispositivo ocupado?</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">umount /mnt/pendrive</span><br>
+                <span class="output" style="color: #fc8181;">umount: /mnt/pendrive: target is busy</span><br><br>
+
+                <span class="comment"># Descubra quem está usando</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">lsof /mnt/pendrive</span><br>
+                <span class="output">COMMAND  PID USER   NAME</span><br>
+                <span class="output">bash    1234 joao   /mnt/pendrive</span><br><br>
+
+                <span class="comment"># Forçar desmontagem (cuidado!)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">umount -f /mnt/pendrive</span>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 15px;">
+                <p>💡 <strong>Dica:</strong> Saia da pasta antes de desmontar! <code>cd ~</code></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: fstab - Introdução -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 /etc/fstab - Montagem Automática</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p style="font-size: 1.1em;">O arquivo <code>/etc/fstab</code> define o que montar no <strong>boot</strong>!</p>
+            </div>
+            <div class="box-terminal">
+                <span class="root">root@linux</span>:~# <span class="command">cat /etc/fstab</span><br>
+                <span class="output"># &lt;dispositivo&gt;  &lt;ponto&gt;  &lt;tipo&gt;  &lt;opções&gt;  &lt;dump&gt; &lt;pass&gt;</span><br>
+                <span class="output">/dev/sda1        /        ext4    defaults   0      1</span><br>
+                <span class="output">/dev/sda2        none     swap    sw         0      0</span><br>
+                <span class="output">/dev/sdb1        /dados   ext4    defaults   0      2</span>
+            </div>
+            
+            <div class="section-divider">Entendendo cada coluna</div>
+            
+            <div class="fstab-line">
+                <span class="col1">/dev/sda1</span> &nbsp;&nbsp; <span class="col2">/</span> &nbsp;&nbsp; <span class="col3">ext4</span> &nbsp;&nbsp; <span class="col4">defaults</span> &nbsp;&nbsp; <span class="col5">0 1</span>
+            </div>
+            
+            <div class="grid-3" style="margin-top: 15px;">
+                <div class="content-box box-info" style="padding: 12px;">
+                    <p><span style="color: #63b3ed;">■</span> <strong>Dispositivo</strong></p>
+                    <p style="font-size: 0.9em;">/dev/sda1 ou UUID</p>
+                </div>
+                <div class="content-box box-warning" style="padding: 12px;">
+                    <p><span style="color: #fc8181;">■</span> <strong>Ponto montagem</strong></p>
+                    <p style="font-size: 0.9em;">/, /home, /dados</p>
+                </div>
+                <div class="content-box box-success" style="padding: 12px;">
+                    <p><span style="color: #38ef7d;">■</span> <strong>Tipo FS</strong></p>
+                    <p style="font-size: 0.9em;">ext4, ntfs, vfat</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: fstab - UUID e opções -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔑 UUID - Identificação Única</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p>Use <strong>UUID</strong> em vez de /dev/sdX - é mais confiável!</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Descobrir UUID dos dispositivos</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">blkid</span><br>
+                <span class="output">/dev/sda1: UUID="<span class="highlight">a1b2c3d4-e5f6-7890</span>" TYPE="ext4"</span><br>
+                <span class="output">/dev/sdb1: UUID="<span class="highlight">1234-ABCD</span>" TYPE="vfat"</span><br><br>
+
+                <span class="comment"># Usar UUID no fstab</span><br>
+                <span class="output">UUID=a1b2c3d4-e5f6-7890  /        ext4  defaults  0 1</span><br>
+                <span class="output">UUID=1234-ABCD           /mnt/usb vfat  defaults  0 0</span>
+            </div>
+            <div class="grid-2" style="margin-top: 15px;">
+                <div class="content-box box-info">
+                    <h3>📋 Opções comuns</h3>
+                    <div class="bullet-point"><code>defaults</code> - rw, suid, exec...</div>
+                    <div class="bullet-point"><code>noauto</code> - Não monta no boot</div>
+                    <div class="bullet-point"><code>user</code> - Usuário pode montar</div>
+                    <div class="bullet-point"><code>nofail</code> - Ignora se ausente</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🔢 Dump e Pass</h3>
+                    <div class="bullet-point"><strong>dump (5ª)</strong> - Backup (0=não)</div>
+                    <div class="bullet-point"><strong>pass (6ª)</strong> - Ordem do fsck</div>
+                    <p style="margin-top: 8px;">Root = 1, outros = 2, swap = 0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Montando Pendrive na Prática -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📱 Caso Prático: Pendrive</h2>
+            <div class="section-divider">Passo a passo para montar um pendrive</div>
+            <div class="box-terminal">
+                <span class="comment"># 1. Conecte o pendrive e identifique</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">dmesg | tail -5</span><br>
+                <span class="output">[  123.456] usb 2-1: new high-speed USB device</span><br>
+                <span class="output">[  123.789] sd 2:0:0:0: [<span class="highlight">sdb</span>] 31277056 512-byte sectors</span><br><br>
+
+                <span class="comment"># 2. Ver as partições</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">lsblk</span><br>
+                <span class="output">sdb      16G disk</span><br>
+                <span class="output">└─sdb1   16G part</span><br><br>
+
+                <span class="comment"># 3. Criar ponto de montagem</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mkdir -p /mnt/pendrive</span><br><br>
+
+                <span class="comment"># 4. Montar</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mount /dev/sdb1 /mnt/pendrive</span><br><br>
+
+                <span class="comment"># 5. Usar! Depois desmontar</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">cp arquivo.txt /mnt/pendrive/</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">umount /mnt/pendrive</span><br>
+                <span class="comment"># Agora pode remover com segurança! ✅</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Formatação -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 Formatar Dispositivos</h2>
+            <div class="content-box box-warning" style="text-align: center; margin-bottom: 15px;">
+                <p>⚠️ <strong>CUIDADO!</strong> Formatar apaga TODOS os dados!</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Formatar como ext4 (Linux)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mkfs.ext4 /dev/sdb1</span><br><br>
+
+                <span class="comment"># Formatar como FAT32 (universal)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mkfs.vfat -F 32 /dev/sdb1</span><br><br>
+
+                <span class="comment"># Formatar como exFAT (pendrives grandes)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mkfs.exfat /dev/sdb1</span><br><br>
+
+                <span class="comment"># Formatar como NTFS (Windows)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">mkfs.ntfs /dev/sdb1</span>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>💡 Quando usar cada um?</h3>
+                <div class="grid-2">
+                    <div><strong>ext4:</strong> Discos internos Linux</div>
+                    <div><strong>FAT32:</strong> Pendrives pequenos (máx 4GB/arquivo)</div>
+                    <div><strong>exFAT:</strong> Pendrives grandes, compatível</div>
+                    <div><strong>NTFS:</strong> Compartilhar com Windows</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Resumo dos Comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos Essenciais</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">lsblk</div>
+                    <h4>Listar Discos</h4>
+                    <p>Ver dispositivos</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">mount</div>
+                    <h4>Montar</h4>
+                    <p>Conectar dispositivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">umount</div>
+                    <h4>Desmontar</h4>
+                    <p>Desconectar</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">df -h</div>
+                    <h4>Espaço</h4>
+                    <p>Ver uso do disco</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">blkid</div>
+                    <h4>UUID</h4>
+                    <p>Identificar discos</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">mkfs</div>
+                    <h4>Formatar</h4>
+                    <p>mkfs.ext4, mkfs.vfat</p>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1.1em;">📁 <strong>/etc/fstab</strong> = Montagem automática no boot</p>
+                <p style="margin-top: 8px;"><code>UUID=xxxx  /ponto  tipo  opções  0  2</code></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 10px;">Arraste os comandos para suas funções!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Listar dispositivos de bloco</div>
+                        <div class="drop-zone" data-correct="lsblk">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Conectar dispositivo a uma pasta</div>
+                        <div class="drop-zone" data-correct="mount">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Desconectar dispositivo</div>
+                        <div class="drop-zone" data-correct="umount">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Ver espaço em disco</div>
+                        <div class="drop-zone" data-correct="df -h">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Descobrir UUID</div>
+                        <div class="drop-zone" data-correct="blkid">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Formatar como ext4</div>
+                        <div class="drop-zone" data-correct="mkfs.ext4">Arraste aqui</div>
+                    </div>
+                </div>
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓💾</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns!</h2>
+                <div class="content-box box-success" style="max-width: 750px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Tipos de filesystem</div>
+                            <div class="bullet-point">mount e umount</div>
+                            <div class="bullet-point">lsblk, df, blkid</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">/etc/fstab</div>
+                            <div class="bullet-point">UUID para montagem</div>
+                            <div class="bullet-point">Formatação (mkfs)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-highlight" style="max-width: 750px; margin-top: 20px;">
+                    <h3>🎯 Pratique agora:</h3>
+                    <p style="font-family: monospace; font-size: 1em; margin-top: 10px;">
+                        <code>lsblk && df -h && cat /etc/fstab</code>
+                    </p>
+                    <p style="margin-top: 10px;">Veja seus discos, espaço e montagens automáticas!</p>
+                </div>
+                <div class="content-box box-warning" style="max-width: 750px; margin-top: 15px;">
+                    <p>💡 <strong>Lembre:</strong> Sempre <code>umount</code> antes de remover pendrives!</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: 'lsblk', text: 'lsblk' },
+            { id: 'mount', text: 'mount' },
+            { id: 'umount', text: 'umount' },
+            { id: 'df -h', text: 'df -h' },
+            { id: 'blkid', text: 'blkid' },
+            { id: 'mkfs.ext4', text: 'mkfs.ext4' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            shuffleArray([...answersData]).forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
+                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina montagem!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
+            else resultDiv.innerHTML += '<p>📚 Pratique com lsblk e mount!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+        initQuiz();
+    </script>
+</body>
+</html>
