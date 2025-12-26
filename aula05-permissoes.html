@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 04 - Permissões e ACL</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.4em; }
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1.05em;
+            line-height: 1.8;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .perm-r { color: #38ef7d; }
+        .box-terminal .perm-w { color: #f6e05e; }
+        .box-terminal .perm-x { color: #fc8181; }
+        .box-terminal .perm-d { color: #63b3ed; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 1.05em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 18px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.5em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 8px 18px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 8px; font-size: 1em; }
+        .command-card p { font-size: 0.85em; color: var(--text-light); }
+        .section-divider {
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        /* Permissões visuais */
+        .perm-display {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 2em;
+            margin: 20px 0;
+        }
+        .perm-char {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .perm-type { background: #dbeafe; color: #1e40af; }
+        .perm-owner { background: #d1fae5; color: #065f46; }
+        .perm-group { background: #fef3c7; color: #92400e; }
+        .perm-others { background: #fee2e2; color: #991b1b; }
+        .perm-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .perm-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+        .perm-legend-item .dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        /* Calculadora octal */
+        .octal-calc {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .octal-group {
+            text-align: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            min-width: 120px;
+        }
+        .octal-group h4 { color: var(--text-light); margin-bottom: 10px; font-size: 0.9em; }
+        .octal-perms {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .octal-perm {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .octal-perm.r { background: #d1fae5; color: #065f46; }
+        .octal-perm.w { background: #fef3c7; color: #92400e; }
+        .octal-perm.x { background: #fee2e2; color: #991b1b; }
+        .octal-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 8px; color: var(--text-dark); font-size: 0.95em; }
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 10px 18px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.9em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+        .quiz-result {
+            margin-top: 25px;
+            padding: 18px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .perm-display { font-size: 1.3em; }
+            .perm-char { width: 35px; height: 35px; }
+            .octal-calc { gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn"><span>←</span> Voltar</a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 04</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">🔐</div>
+                <h1 class="slide-title">Permissões e ACL</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Controle quem pode fazer o quê!</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">chmod, chown, chgrp e umask</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 600px;">
+                    <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -l script.sh</span><br>
+                    <span class="output">-<span class="perm-r">r</span><span class="perm-w">w</span><span class="perm-x">x</span><span class="perm-r">r</span>-<span class="perm-x">x</span><span class="perm-r">r</span>-- 1 usuario grupo 1024 jan 15 script.sh</span><br>
+                    <span class="comment"># O que significam essas letras? 🤔</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Hoje você vai entender o <strong>sistema de segurança</strong> do Linux!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: Por que permissões? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 Por que Permissões?</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🏢 Analogia: Escritório</h3>
+                    <p style="line-height: 1.6;">Imagine um escritório com várias salas:</p>
+                    <div class="bullet-point">👤 <strong>Dono:</strong> Tem a chave mestra</div>
+                    <div class="bullet-point">👥 <strong>Grupo:</strong> Equipe com acesso</div>
+                    <div class="bullet-point">🌍 <strong>Outros:</strong> Visitantes</div>
+                    <p style="margin-top: 15px;">Cada um tem diferentes níveis de acesso!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🔒 No Linux</h3>
+                    <p style="line-height: 1.6;">Cada arquivo/pasta tem:</p>
+                    <div class="bullet-point"><strong>Um dono</strong> (owner)</div>
+                    <div class="bullet-point"><strong>Um grupo</strong> (group)</div>
+                    <div class="bullet-point"><strong>Permissões</strong> para cada um</div>
+                    <p style="margin-top: 15px;">Isso protege o sistema e os dados!</p>
+                </div>
+            </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                <p style="font-size: 1.1em;">💡 Sem permissões, qualquer usuário poderia apagar arquivos do sistema!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Entendendo rwx -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📖 As 3 Permissões: r, w, x</h2>
+            <div class="section-divider">Read (ler) • Write (escrever) • Execute (executar)</div>
+            
+            <div class="grid-3">
+                <div class="content-box box-success" style="text-align: center;">
+                    <h3 style="font-size: 2em;">r</h3>
+                    <h4>Read (Ler)</h4>
+                    <p><strong>Arquivo:</strong> Ver conteúdo</p>
+                    <p><strong>Pasta:</strong> Listar arquivos</p>
+                </div>
+                <div class="content-box box-highlight" style="text-align: center;">
+                    <h3 style="font-size: 2em;">w</h3>
+                    <h4>Write (Escrever)</h4>
+                    <p><strong>Arquivo:</strong> Modificar</p>
+                    <p><strong>Pasta:</strong> Criar/deletar</p>
+                </div>
+                <div class="content-box box-warning" style="text-align: center;">
+                    <h3 style="font-size: 2em;">x</h3>
+                    <h4>Execute (Executar)</h4>
+                    <p><strong>Arquivo:</strong> Rodar como programa</p>
+                    <p><strong>Pasta:</strong> Entrar (cd)</p>
+                </div>
+            </div>
+
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>💡 O traço (-) significa "sem permissão"</h3>
+                <p><code>r--</code> = só leitura | <code>rw-</code> = leitura e escrita | <code>rwx</code> = tudo</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Lendo as permissões -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔍 Lendo as Permissões</h2>
+            
+            <div class="perm-display">
+                <div class="perm-char perm-type">-</div>
+                <div class="perm-char perm-owner">r</div>
+                <div class="perm-char perm-owner">w</div>
+                <div class="perm-char perm-owner">x</div>
+                <div class="perm-char perm-group">r</div>
+                <div class="perm-char perm-group">-</div>
+                <div class="perm-char perm-group">x</div>
+                <div class="perm-char perm-others">r</div>
+                <div class="perm-char perm-others">-</div>
+                <div class="perm-char perm-others">-</div>
+            </div>
+
+            <div class="perm-legend">
+                <div class="perm-legend-item">
+                    <div class="dot" style="background: #dbeafe;"></div>
+                    <span>Tipo (- arquivo, d pasta)</span>
+                </div>
+                <div class="perm-legend-item">
+                    <div class="dot" style="background: #d1fae5;"></div>
+                    <span>Dono (owner)</span>
+                </div>
+                <div class="perm-legend-item">
+                    <div class="dot" style="background: #fef3c7;"></div>
+                    <span>Grupo (group)</span>
+                </div>
+                <div class="perm-legend-item">
+                    <div class="dot" style="background: #fee2e2;"></div>
+                    <span>Outros (others)</span>
+                </div>
+            </div>
+
+            <div class="box-terminal" style="margin-top: 25px;">
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -l</span><br>
+                <span class="output"><span class="perm-d">d</span>rwxr-xr-x 2 usuario grupo 4096 jan 15 <span style="color:#63b3ed">Documentos/</span></span><br>
+                <span class="output">-rw-r--r-- 1 usuario grupo 1024 jan 15 notas.txt</span><br>
+                <span class="output">-rwx------ 1 usuario grupo 2048 jan 15 <span style="color:#38ef7d">script.sh</span></span>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Sistema Octal -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔢 Sistema Octal (Números)</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.2em;">Cada permissão tem um <strong>valor numérico</strong>!</p>
+            </div>
+
+            <div class="grid-3" style="margin-bottom: 25px;">
+                <div class="content-box box-success" style="text-align: center;">
+                    <h3 style="font-size: 2.5em;">4</h3>
+                    <p><strong>r</strong> (read)</p>
+                </div>
+                <div class="content-box box-highlight" style="text-align: center;">
+                    <h3 style="font-size: 2.5em;">2</h3>
+                    <p><strong>w</strong> (write)</p>
+                </div>
+                <div class="content-box box-warning" style="text-align: center;">
+                    <h3 style="font-size: 2.5em;">1</h3>
+                    <p><strong>x</strong> (execute)</p>
+                </div>
+            </div>
+
+            <div class="octal-calc">
+                <div class="octal-group">
+                    <h4>Dono</h4>
+                    <div class="octal-perms">
+                        <div class="octal-perm r">r</div>
+                        <div class="octal-perm w">w</div>
+                        <div class="octal-perm x">x</div>
+                    </div>
+                    <div class="octal-value">7</div>
+                    <small>4+2+1</small>
+                </div>
+                <div class="octal-group">
+                    <h4>Grupo</h4>
+                    <div class="octal-perms">
+                        <div class="octal-perm r">r</div>
+                        <div class="octal-perm" style="background:#e2e8f0;">-</div>
+                        <div class="octal-perm x">x</div>
+                    </div>
+                    <div class="octal-value">5</div>
+                    <small>4+0+1</small>
+                </div>
+                <div class="octal-group">
+                    <h4>Outros</h4>
+                    <div class="octal-perms">
+                        <div class="octal-perm r">r</div>
+                        <div class="octal-perm" style="background:#e2e8f0;">-</div>
+                        <div class="octal-perm" style="background:#e2e8f0;">-</div>
+                    </div>
+                    <div class="octal-value">4</div>
+                    <small>4+0+0</small>
+                </div>
+            </div>
+
+            <div class="content-box box-info" style="text-align: center;">
+                <p style="font-size: 1.2em;"><code>rwxr-xr--</code> = <strong>754</strong></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Permissões comuns -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Permissões Comuns</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📄 Arquivos</h3>
+                    <div class="bullet-point"><code>644</code> → rw-r--r-- (padrão)</div>
+                    <div class="bullet-point"><code>755</code> → rwxr-xr-x (executável)</div>
+                    <div class="bullet-point"><code>600</code> → rw------- (privado)</div>
+                    <div class="bullet-point"><code>777</code> → rwxrwxrwx (⚠️ perigoso!)</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>📁 Pastas</h3>
+                    <div class="bullet-point"><code>755</code> → rwxr-xr-x (padrão)</div>
+                    <div class="bullet-point"><code>700</code> → rwx------ (só dono)</div>
+                    <div class="bullet-point"><code>775</code> → rwxrwxr-x (grupo pode escrever)</div>
+                </div>
+            </div>
+
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚠️ Nunca use 777!</h3>
+                <p>Dar permissão total a todos é um <strong>risco de segurança</strong>. Qualquer um pode modificar ou executar!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: chmod -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 chmod: Alterando Permissões</h2>
+            <div class="section-divider">CHange MODe - Muda as permissões</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># Sintaxe: chmod [permissões] arquivo</span><br><br>
+
+                <span class="comment"># Modo OCTAL (números)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 755 script.sh</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 644 documento.txt</span><br><br>
+
+                <span class="comment"># Modo SIMBÓLICO (letras)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod u+x script.sh</span> <span class="comment"># Adiciona execução ao dono</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod g-w arquivo.txt</span> <span class="comment"># Remove escrita do grupo</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod o=r arquivo.txt</span> <span class="comment"># Define só leitura para outros</span>
+            </div>
+
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>💡 Modo Simbólico</h3>
+                <div class="grid-2">
+                    <div>
+                        <strong>Quem:</strong> u (user/dono), g (group), o (others), a (all)
+                    </div>
+                    <div>
+                        <strong>Ação:</strong> + (adiciona), - (remove), = (define)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: chmod exemplos práticos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 chmod: Exemplos Práticos</h2>
+            <div class="box-terminal">
+                <span class="comment"># Tornar script executável</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod +x meu_script.sh</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">./meu_script.sh</span> <span class="comment"># Agora funciona!</span><br><br>
+
+                <span class="comment"># Proteger arquivo sensível (só dono lê/escreve)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 600 senhas.txt</span><br><br>
+
+                <span class="comment"># Pasta compartilhada (grupo pode escrever)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 775 /projeto/compartilhado</span><br><br>
+
+                <span class="comment"># Aplicar recursivamente em pasta</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod -R 755 /var/www/html</span>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>💡 Dica: chmod +x</h3>
+                <p>O atalho <code>chmod +x arquivo</code> adiciona permissão de execução para todos. É o mais usado para scripts!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: chown e chgrp -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">👤 chown e chgrp: Mudando Dono</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>👤 chown (Change Owner)</h3>
+                    <p>Muda o <strong>dono</strong> do arquivo.</p>
+                    <div class="box-terminal" style="padding: 12px; margin-top: 10px; font-size: 0.9em;">
+                        <span class="command">chown joao arquivo.txt</span><br>
+                        <span class="comment"># joao agora é o dono</span>
+                    </div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>👥 chgrp (Change Group)</h3>
+                    <p>Muda o <strong>grupo</strong> do arquivo.</p>
+                    <div class="box-terminal" style="padding: 12px; margin-top: 10px; font-size: 0.9em;">
+                        <span class="command">chgrp vendas relatorio.pdf</span><br>
+                        <span class="comment"># grupo vendas</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Mudar dono E grupo de uma vez</span><br>
+                <span class="prompt">root@linux</span>:~# <span class="command">chown joao:vendas relatorio.pdf</span><br><br>
+
+                <span class="comment"># Recursivo (toda a pasta)</span><br>
+                <span class="prompt">root@linux</span>:~# <span class="command">chown -R www-data:www-data /var/www/html</span>
+            </div>
+
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <p>⚠️ <strong>Precisa de root!</strong> Só o administrador pode mudar donos de arquivos.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: umask -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎭 umask: Permissões Padrão</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">O <strong>umask</strong> define as permissões padrão de novos arquivos!</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🤔 Como funciona?</h3>
+                    <p>O umask <strong>subtrai</strong> permissões do máximo:</p>
+                    <div class="bullet-point">Arquivos: 666 - umask</div>
+                    <div class="bullet-point">Pastas: 777 - umask</div>
+                    <p style="margin-top: 15px;"><strong>Exemplo:</strong> umask 022</p>
+                    <p>Arquivos: 666 - 022 = <strong>644</strong></p>
+                    <p>Pastas: 777 - 022 = <strong>755</strong></p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>📋 Valores comuns</h3>
+                    <div class="bullet-point"><code>022</code> → Padrão (644/755)</div>
+                    <div class="bullet-point"><code>027</code> → Mais restritivo</div>
+                    <div class="bullet-point"><code>077</code> → Só dono acessa</div>
+                </div>
+            </div>
+
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Ver umask atual</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">umask</span><br>
+                <span class="output">0022</span><br><br>
+
+                <span class="comment"># Mudar umask (só para sessão atual)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">umask 027</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Permissões especiais -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⭐ Permissões Especiais</h2>
+            <div class="grid-3">
+                <div class="content-box box-warning" style="text-align: center;">
+                    <h3>SUID</h3>
+                    <p style="font-size: 2em;">4---</p>
+                    <p>Executa com permissão do <strong>dono</strong></p>
+                    <p style="margin-top: 10px; font-size: 0.9em;"><code>chmod 4755</code></p>
+                </div>
+                <div class="content-box box-highlight" style="text-align: center;">
+                    <h3>SGID</h3>
+                    <p style="font-size: 2em;">2---</p>
+                    <p>Herda <strong>grupo</strong> da pasta pai</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;"><code>chmod 2755</code></p>
+                </div>
+                <div class="content-box box-info" style="text-align: center;">
+                    <h3>Sticky Bit</h3>
+                    <p style="font-size: 2em;">1---</p>
+                    <p>Só dono pode <strong>deletar</strong></p>
+                    <p style="margin-top: 10px; font-size: 0.9em;"><code>chmod 1777</code></p>
+                </div>
+            </div>
+
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Exemplo: /tmp tem Sticky Bit (t no final)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -ld /tmp</span><br>
+                <span class="output">drwxrwxrw<span class="highlight">t</span> 10 root root 4096 jan 15 /tmp</span><br>
+                <span class="comment"># Todos podem criar, mas só o dono pode deletar seus arquivos!</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Resumo Comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo dos Comandos</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">chmod</div>
+                    <h4>Muda Permissões</h4>
+                    <p>chmod 755 arquivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">chown</div>
+                    <h4>Muda Dono</h4>
+                    <p>chown user arquivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">chgrp</div>
+                    <h4>Muda Grupo</h4>
+                    <p>chgrp grupo arquivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">umask</div>
+                    <h4>Permissão Padrão</h4>
+                    <p>umask 022</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">ls -l</div>
+                    <h4>Ver Permissões</h4>
+                    <p>Lista detalhada</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">stat</div>
+                    <h4>Info Completa</h4>
+                    <p>stat arquivo</p>
+                </div>
+            </div>
+            <div class="content-box box-success" style="margin-top: 25px; text-align: center;">
+                <p style="font-size: 1.1em;">💡 <strong>Lembre:</strong> r=4, w=2, x=1 → Some para obter o número!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 15px;">Arraste as permissões/comandos para suas funções!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Leitura + Escrita + Execução</div>
+                        <div class="drop-zone" data-correct="7">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Só leitura</div>
+                        <div class="drop-zone" data-correct="4">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Altera permissões</div>
+                        <div class="drop-zone" data-correct="chmod">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Muda o dono</div>
+                        <div class="drop-zone" data-correct="chown">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Permissão padrão</div>
+                        <div class="drop-zone" data-correct="umask">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">rwxr-xr-x em octal</div>
+                        <div class="drop-zone" data-correct="755">Arraste aqui</div>
+                    </div>
+                </div>
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 18px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🔐</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns!</h2>
+                <div class="content-box box-success" style="max-width: 750px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">r=4, w=2, x=1</div>
+                            <div class="bullet-point">Dono, Grupo, Outros</div>
+                            <div class="bullet-point"><code>chmod</code> muda permissões</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point"><code>chown</code> muda dono</div>
+                            <div class="bullet-point"><code>umask</code> define padrão</div>
+                            <div class="bullet-point">Permissões especiais</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-highlight" style="max-width: 750px; margin-top: 20px;">
+                    <h3>🎯 Pratique:</h3>
+                    <p style="font-family: monospace; font-size: 1em; margin-top: 10px;">
+                        <code>touch teste.sh && chmod 755 teste.sh && ls -l teste.sh</code>
+                    </p>
+                    <p style="margin-top: 10px;">Cria arquivo, dá permissão de execução e verifica!</p>
+                </div>
+                <div style="margin-top: 35px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: '7', text: '7' },
+            { id: '4', text: '4' },
+            { id: 'chmod', text: 'chmod' },
+            { id: 'chown', text: 'chown' },
+            { id: 'umask', text: 'umask' },
+            { id: '755', text: '755' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            shuffleArray([...answersData]).forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
+                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina as permissões!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
+            else resultDiv.innerHTML += '<p>📚 Revise r=4, w=2, x=1!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+        initQuiz();
+    </script>
+</body>
+</html>
