@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 05 - Pacotes e Repositórios</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h3 { color: var(--primary); margin: 20px 0 10px; font-size: 1.4em; }
+        .content-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1.05em;
+            line-height: 1.8;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .root { color: #fc8181; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .box-terminal .package { color: #63b3ed; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 1.05em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        .command-card {
+            background: white;
+            border-radius: 15px;
+            padding: 18px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.3em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 8px; font-size: 1em; }
+        .command-card p { font-size: 0.85em; color: var(--text-light); }
+        .section-divider {
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+        .flow-box {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .flow-arrow { font-size: 2em; color: #f39c12; }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .comparison-table th {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+        }
+        .comparison-table tr:hover { background: #f4f7fe; }
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .drag-drop-container { display: flex; gap: 30px; margin-top: 20px; }
+        .col-questions, .col-answers { flex: 1; }
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 8px; color: var(--text-dark); font-size: 0.95em; }
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 10px 18px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.9em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+        .quiz-result {
+            margin-top: 25px;
+            padding: 18px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+            .flow-diagram { flex-direction: column; }
+            .flow-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn"><span>←</span> Voltar</a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 05</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">📦</div>
+                <h1 class="slide-title">Pacotes e Repositórios</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Instale, atualize e remova programas!</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">apt, dpkg e gerenciamento de software</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 600px;">
+                    <span class="root">root@linux</span>:~# <span class="command">apt install htop</span><br>
+                    <span class="output">Lendo listas de pacotes... Pronto</span><br>
+                    <span class="output">htop já é a versão mais recente (3.2.1).</span><br>
+                    <span class="comment"># Instalação em segundos! 🚀</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Hoje você vai aprender a <strong>gerenciar todo o software</strong> do seu sistema!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que são pacotes? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📦 O que são Pacotes?</h2>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🎁 Definição</h3>
+                    <p style="line-height: 1.6;">Um <strong>pacote</strong> é um arquivo compactado contendo:</p>
+                    <div class="bullet-point">O programa em si</div>
+                    <div class="bullet-point">Arquivos de configuração</div>
+                    <div class="bullet-point">Documentação</div>
+                    <div class="bullet-point">Lista de dependências</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>🏪 Analogia: Loja de Apps</h3>
+                    <p style="line-height: 1.6;">É como a Play Store ou App Store:</p>
+                    <div class="bullet-point">Você busca o programa</div>
+                    <div class="bullet-point">Clica em instalar</div>
+                    <div class="bullet-point">O sistema baixa e configura</div>
+                    <p style="margin-top: 15px;">Mas tudo pelo <strong>terminal</strong>!</p>
+                </div>
+            </div>
+            <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
+                <p style="font-size: 1.1em;">💡 No Debian/Ubuntu, pacotes têm extensão <strong>.deb</strong></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: O que são repositórios? -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🏪 O que são Repositórios?</h2>
+            <div class="section-divider">Servidores com milhares de pacotes prontos!</div>
+            
+            <div class="flow-diagram">
+                <div class="flow-box">🌐 Repositório<br><small>(servidor)</small></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">📥 apt<br><small>(gerenciador)</small></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-box">💻 Seu PC<br><small>(instalado)</small></div>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>📋 Tipos de Repositórios</h3>
+                    <div class="bullet-point"><strong>main</strong> - Software oficial</div>
+                    <div class="bullet-point"><strong>universe</strong> - Comunidade</div>
+                    <div class="bullet-point"><strong>restricted</strong> - Drivers proprietários</div>
+                    <div class="bullet-point"><strong>multiverse</strong> - Não-livre</div>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>📁 Arquivo de configuração</h3>
+                    <p>Lista de repositórios:</p>
+                    <p style="margin-top: 10px;"><code>/etc/apt/sources.list</code></p>
+                    <p style="margin-top: 10px;">E a pasta:</p>
+                    <p><code>/etc/apt/sources.list.d/</code></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: apt vs dpkg -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔧 apt vs dpkg</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Duas ferramentas, propósitos diferentes!</p>
+            </div>
+
+            <table class="comparison-table">
+                <tr>
+                    <th>Característica</th>
+                    <th>apt</th>
+                    <th>dpkg</th>
+                </tr>
+                <tr>
+                    <td><strong>Nível</strong></td>
+                    <td>Alto nível (fácil)</td>
+                    <td>Baixo nível</td>
+                </tr>
+                <tr>
+                    <td><strong>Dependências</strong></td>
+                    <td>✅ Resolve automaticamente</td>
+                    <td>❌ Não resolve</td>
+                </tr>
+                <tr>
+                    <td><strong>Download</strong></td>
+                    <td>✅ Baixa da internet</td>
+                    <td>❌ Precisa do arquivo .deb</td>
+                </tr>
+                <tr>
+                    <td><strong>Uso comum</strong></td>
+                    <td>Dia a dia</td>
+                    <td>Instalar .deb manual</td>
+                </tr>
+            </table>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>💡 Resumo</h3>
+                <p><strong>apt</strong> = Seu amigo do dia a dia (use sempre!)</p>
+                <p><strong>dpkg</strong> = Para instalar arquivos .deb baixados manualmente</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: apt update e upgrade -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔄 apt update e upgrade</h2>
+            <div class="section-divider">O primeiro passo: atualizar a lista de pacotes!</div>
+            
+            <div class="box-terminal">
+                <span class="comment"># 1. Atualiza a LISTA de pacotes disponíveis</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt update</span><br>
+                <span class="output">Atingido:1 http://br.archive.ubuntu.com/ubuntu jammy InRelease</span><br>
+                <span class="output">Obtido:2 http://security.ubuntu.com jammy-security InRelease</span><br>
+                <span class="output">Lendo lista de pacotes... Pronto</span><br><br>
+
+                <span class="comment"># 2. Instala as ATUALIZAÇÕES dos pacotes</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt upgrade</span><br>
+                <span class="output">Os seguintes pacotes serão atualizados:</span><br>
+                <span class="output">  base-files bash coreutils...</span><br>
+                <span class="output">Deseja continuar? [S/n]</span> <span class="highlight">S</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>📋 update</h3>
+                    <p>Atualiza a <strong>lista</strong> do que está disponível. Não instala nada!</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>⬆️ upgrade</h3>
+                    <p>Instala as <strong>versões novas</strong> dos pacotes já instalados.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: apt install -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📥 apt install: Instalando Pacotes</h2>
+            <div class="box-terminal">
+                <span class="comment"># Instalar um pacote</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt install <span class="package">htop</span></span><br>
+                <span class="output">Lendo listas de pacotes... Pronto</span><br>
+                <span class="output">Os seguintes NOVOS pacotes serão instalados:</span><br>
+                <span class="output">  htop</span><br>
+                <span class="output">Deseja continuar? [S/n]</span> <span class="highlight">S</span><br><br>
+
+                <span class="comment"># Instalar vários de uma vez</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt install <span class="package">vim git curl wget</span></span><br><br>
+
+                <span class="comment"># Instalar sem pedir confirmação</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt install -y <span class="package">nginx</span></span>
+            </div>
+
+            <div class="content-box box-highlight" style="margin-top: 20px;">
+                <h3>💡 O -y é útil em scripts!</h3>
+                <p>A flag <code>-y</code> responde "sim" automaticamente. Útil para automação, mas use com cuidado!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: apt remove e purge -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🗑️ apt remove e purge</h2>
+            <div class="box-terminal">
+                <span class="comment"># Remove o pacote (mantém configurações)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt remove <span class="package">htop</span></span><br><br>
+
+                <span class="comment"># Remove o pacote E as configurações</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt purge <span class="package">htop</span></span><br><br>
+
+                <span class="comment"># Remove pacotes que não são mais necessários</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt autoremove</span><br>
+                <span class="output">Os seguintes pacotes serão REMOVIDOS:</span><br>
+                <span class="output">  libx264-163 libx265-199...</span>
+            </div>
+
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="content-box box-info">
+                    <h3>🗑️ remove</h3>
+                    <p>Remove o programa mas <strong>mantém</strong> arquivos de configuração.</p>
+                </div>
+                <div class="content-box box-warning">
+                    <h3>🔥 purge</h3>
+                    <p>Remove <strong>tudo</strong>: programa + configurações. Limpeza total!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: apt search e show -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔍 apt search e show</h2>
+            <div class="box-terminal">
+                <span class="comment"># Buscar pacotes por nome ou descrição</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">apt search <span class="package">editor</span></span><br>
+                <span class="output">vim - Vi IMproved - enhanced vi editor</span><br>
+                <span class="output">nano - small, friendly text editor</span><br>
+                <span class="output">gedit - official text editor of GNOME</span><br><br>
+
+                <span class="comment"># Ver detalhes de um pacote</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">apt show <span class="package">htop</span></span><br>
+                <span class="output">Package: htop</span><br>
+                <span class="output">Version: 3.2.1-1</span><br>
+                <span class="output">Description: interactive process viewer</span><br>
+                <span class="output">Depends: libc6, libncursesw6...</span>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>💡 Outros comandos úteis</h3>
+                <div class="grid-2">
+                    <div><code>apt list --installed</code> → Lista instalados</div>
+                    <div><code>apt list --upgradable</code> → Lista atualizáveis</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: dpkg -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📦 dpkg: Instalando .deb Manual</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Baixou um arquivo <strong>.deb</strong>? Use dpkg!</p>
+            </div>
+
+            <div class="box-terminal">
+                <span class="comment"># Instalar um arquivo .deb</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">dpkg -i <span class="package">google-chrome.deb</span></span><br><br>
+
+                <span class="comment"># Se der erro de dependências, rode:</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt install -f</span><br>
+                <span class="output">Corrigindo dependências...</span><br><br>
+
+                <span class="comment"># Remover pacote</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">dpkg -r <span class="package">google-chrome-stable</span></span><br><br>
+
+                <span class="comment"># Listar pacotes instalados</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">dpkg -l | grep chrome</span>
+            </div>
+
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>📋 Flags principais do dpkg</h3>
+                <div class="grid-2">
+                    <div><code>-i</code> → Install (instalar)</div>
+                    <div><code>-r</code> → Remove (remover)</div>
+                    <div><code>-l</code> → List (listar)</div>
+                    <div><code>-S</code> → Search (buscar dono)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Adicionando repositórios -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">➕ Adicionando Repositórios</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Precisa de software que não está nos repos oficiais?</p>
+            </div>
+
+            <div class="box-terminal">
+                <span class="comment"># Adicionar repositório PPA (Personal Package Archive)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">add-apt-repository ppa:nome/ppa</span><br><br>
+
+                <span class="comment"># Depois de adicionar, sempre atualize a lista!</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt update</span><br><br>
+
+                <span class="comment"># Remover um PPA</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">add-apt-repository --remove ppa:nome/ppa</span>
+            </div>
+
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚠️ Cuidado com PPAs!</h3>
+                <p>PPAs são repositórios de terceiros. Só adicione de fontes <strong>confiáveis</strong>! Podem conter software não testado ou malicioso.</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Limpeza do sistema -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🧹 Limpeza do Sistema</h2>
+            <div class="box-terminal">
+                <span class="comment"># Remover pacotes órfãos (dependências não mais usadas)</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt autoremove</span><br><br>
+
+                <span class="comment"># Limpar cache de pacotes baixados</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt clean</span><br>
+                <span class="comment"># Remove TODOS os .deb do cache</span><br><br>
+
+                <span class="comment"># Limpar apenas pacotes antigos do cache</span><br>
+                <span class="root">root@linux</span>:~# <span class="command">apt autoclean</span><br>
+                <span class="comment"># Mantém versões atuais, remove antigas</span>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>💡 Combo de limpeza!</h3>
+                <p style="font-family: monospace; margin-top: 10px;">
+                    <code>apt autoremove && apt autoclean</code>
+                </p>
+                <p style="margin-top: 10px;">Libera espaço em disco removendo pacotes desnecessários!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Resumo dos Comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos Essenciais</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">apt update</div>
+                    <h4>Atualiza Lista</h4>
+                    <p>Baixa info dos repos</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">apt upgrade</div>
+                    <h4>Atualiza Pacotes</h4>
+                    <p>Instala versões novas</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">apt install</div>
+                    <h4>Instala</h4>
+                    <p>apt install nome</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">apt remove</div>
+                    <h4>Remove</h4>
+                    <p>Mantém configs</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">apt search</div>
+                    <h4>Busca</h4>
+                    <p>Encontra pacotes</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">dpkg -i</div>
+                    <h4>Instala .deb</h4>
+                    <p>Arquivo local</p>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 25px; text-align: center;">
+                <p style="font-size: 1.1em;">💡 <strong>Rotina de atualização:</strong> <code>apt update && apt upgrade -y</code></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 15px;">Arraste os comandos para suas funções!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Atualiza lista de pacotes</div>
+                        <div class="drop-zone" data-correct="apt update">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Instala um programa</div>
+                        <div class="drop-zone" data-correct="apt install">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Remove programa + configs</div>
+                        <div class="drop-zone" data-correct="apt purge">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Busca pacotes</div>
+                        <div class="drop-zone" data-correct="apt search">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Instala arquivo .deb local</div>
+                        <div class="drop-zone" data-correct="dpkg -i">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Remove pacotes órfãos</div>
+                        <div class="drop-zone" data-correct="apt autoremove">Arraste aqui</div>
+                    </div>
+                </div>
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 18px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓📦</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns!</h2>
+                <div class="content-box box-success" style="max-width: 750px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Pacotes e repositórios</div>
+                            <div class="bullet-point"><code>apt update/upgrade</code></div>
+                            <div class="bullet-point"><code>apt install/remove</code></div>
+                        </div>
+                        <div>
+                            <div class="bullet-point"><code>apt search/show</code></div>
+                            <div class="bullet-point"><code>dpkg -i</code> para .deb</div>
+                            <div class="bullet-point">Limpeza do sistema</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-highlight" style="max-width: 750px; margin-top: 20px;">
+                    <h3>🎯 Pratique agora:</h3>
+                    <p style="font-family: monospace; font-size: 1em; margin-top: 10px;">
+                        <code>sudo apt update && sudo apt install htop -y && htop</code>
+                    </p>
+                    <p style="margin-top: 10px;">Atualiza, instala o htop e abre ele!</p>
+                </div>
+                <div style="margin-top: 35px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: 'apt update', text: 'apt update' },
+            { id: 'apt install', text: 'apt install' },
+            { id: 'apt purge', text: 'apt purge' },
+            { id: 'apt search', text: 'apt search' },
+            { id: 'dpkg -i', text: 'dpkg -i' },
+            { id: 'apt autoremove', text: 'apt autoremove' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            shuffleArray([...answersData]).forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
+                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina o apt!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
+            else resultDiv.innerHTML += '<p>📚 Pratique: apt update && apt upgrade!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+        initQuiz();
+    </script>
+</body>
+</html>
