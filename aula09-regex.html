@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 09 - Regex, Filtros e Metacaracteres</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-light: #f4f7fe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --accent-green: #38ef7d;
+            --accent-red: #ff758c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .classroom-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            background: #f0f2f5;
+        }
+        .back-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .lesson-info h1 { font-size: 1.1em; margin: 0; color: var(--text-dark); }
+        .lesson-info span { font-size: 0.85em; color: var(--text-light); }
+        .slide-counter {
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .viewer-container {
+            margin-top: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .slide-card {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80vh;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 50px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease;
+        }
+        .slide-card.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1.slide-title {
+            font-size: 2.8em;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2.slide-subtitle {
+            font-size: 2.2em;
+            color: var(--text-dark);
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h3 { color: var(--primary); margin: 15px 0 10px; font-size: 1.3em; }
+        .content-box {
+            padding: 18px;
+            border-radius: 12px;
+            margin: 12px 0;
+            border-left: 5px solid;
+            background: #f8fafc;
+        }
+        .box-highlight { border-color: #f39c12; background: #fffaf0; }
+        .box-info { border-color: var(--primary); background: #f4f7fe; }
+        .box-success { border-color: var(--accent-green); background: #f0fdf4; }
+        .box-warning { border-color: var(--accent-red); background: #fff5f5; }
+        .box-terminal { 
+            background: #1a202c; 
+            color: #38ef7d; 
+            font-family: 'Courier New', monospace; 
+            border-left: 5px solid #38ef7d;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1em;
+            line-height: 1.7;
+        }
+        .box-terminal .prompt { color: #63b3ed; }
+        .box-terminal .command { color: #38ef7d; }
+        .box-terminal .output { color: #a0aec0; }
+        .box-terminal .comment { color: #718096; font-style: italic; }
+        .box-terminal .highlight { color: #f6e05e; }
+        .box-terminal .match { color: #fc8181; font-weight: bold; }
+        .box-terminal .regex { color: #f6e05e; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+        .bullet-point {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+        .bullet-point::before {
+            content: "🔍";
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        .command-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .command-card:hover { transform: translateY(-5px); }
+        .command-card .cmd { 
+            font-family: 'Courier New', monospace;
+            font-size: 1.3em; 
+            color: var(--primary);
+            background: #f4f7fe;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .command-card h4 { color: var(--text-dark); margin-bottom: 5px; font-size: 0.95em; }
+        .command-card p { font-size: 0.8em; color: var(--text-light); }
+        .section-divider {
+            text-align: center;
+            padding: 12px;
+            margin: 15px 0;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        .regex-card {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-top: 3px solid var(--primary);
+        }
+        .regex-card .symbol {
+            font-family: 'Courier New', monospace;
+            font-size: 1.8em;
+            color: var(--secondary);
+            margin-bottom: 5px;
+        }
+        .regex-card h4 { font-size: 0.9em; color: var(--text-dark); }
+        .regex-card p { font-size: 0.8em; color: var(--text-light); }
+        .regex-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .regex-table th {
+            background: var(--primary);
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+        .regex-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            font-family: 'Courier New', monospace;
+        }
+        .regex-table tr:hover { background: #f4f7fe; }
+        .nav-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .nav-btn:hover { background: var(--secondary); transform: translateY(-2px); }
+        .nav-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .drag-drop-container { display: flex; gap: 25px; margin-top: 15px; }
+        .col-questions, .col-answers { flex: 1; }
+        .question-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 6px; color: var(--text-dark); font-size: 0.9em; }
+        .drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .drop-zone.drag-over { background: #e6fffa; border-color: var(--accent-green); }
+        .drop-zone.has-answer { border-style: solid; background: white; border-color: var(--primary); }
+        .answer-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 0.85em;
+            user-select: none;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-item:active { cursor: grabbing; }
+        .answer-item.dragging { opacity: 0.5; }
+        .answer-item.in-drop-zone { margin: 0; width: 100%; box-shadow: none; }
+        .quiz-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .viewer-container { padding: 10px; margin-top: 70px; }
+            .slide-card { padding: 25px; min-height: 70vh; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .drag-drop-container { flex-direction: column; }
+            .classroom-header { padding: 10px 15px; }
+            h1.slide-title { font-size: 2em; }
+            h2.slide-subtitle { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+    <header class="classroom-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" class="back-btn"><span>←</span> Voltar</a>
+            <div class="lesson-info">
+                <h1>Fundamentos do Linux</h1>
+                <span>Módulo 1 • Aula 09</span>
+            </div>
+        </div>
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+        </div>
+    </header>
+
+    <div class="viewer-container">
+        
+        <!-- SLIDE 1: Capa -->
+        <div class="slide-card active">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <div style="font-size: 5em;">🔍</div>
+                <h1 class="slide-title">Regex, Filtros e Metacaracteres</h1>
+                <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
+                    <p><strong>Encontre e transforme texto como um ninja!</strong></p>
+                    <p style="margin-top: 10px; opacity: 0.8;">grep, sed, awk e expressões regulares</p>
+                </div>
+                <div class="box-terminal" style="margin-top: 30px; max-width: 700px;">
+                    <span class="prompt">usuario@linux</span>:~$ <span class="command">grep</span> <span class="regex">"^erro"</span> /var/log/syslog<br>
+                    <span class="output"><span class="match">erro</span>: falha na conexão</span><br>
+                    <span class="output"><span class="match">erro</span>: timeout do servidor</span><br>
+                    <span class="comment"># Encontrou todas as linhas que começam com "erro"! 🎯</span>
+                </div>
+                <div class="content-box box-info" style="margin-top: 30px;">
+                    💡 Regex é uma das habilidades mais poderosas do Linux!
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: O que é Regex -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🤔 O que é Regex?</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p style="font-size: 1.2em;"><strong>Regex</strong> = Expressões Regulares = Padrões de busca</p>
+            </div>
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🎯 Para que serve?</h3>
+                    <div class="bullet-point">Buscar texto em arquivos</div>
+                    <div class="bullet-point">Validar formatos (email, CPF)</div>
+                    <div class="bullet-point">Substituir texto em massa</div>
+                    <div class="bullet-point">Extrair informações</div>
+                    <div class="bullet-point">Filtrar logs</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🔧 Ferramentas que usam</h3>
+                    <div class="bullet-point"><code>grep</code> - Buscar padrões</div>
+                    <div class="bullet-point"><code>sed</code> - Substituir texto</div>
+                    <div class="bullet-point"><code>awk</code> - Processar colunas</div>
+                    <div class="bullet-point"><code>vim</code> - Editor de texto</div>
+                    <div class="bullet-point">Python, JavaScript, PHP...</div>
+                </div>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <p>💡 <strong>Analogia:</strong> Regex é como um "curinga" super poderoso. Em vez de buscar "gato", você pode buscar "qualquer palavra de 4 letras que começa com g"!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Metacaracteres Básicos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚡ Metacaracteres Básicos</h2>
+            <div class="grid-4">
+                <div class="regex-card">
+                    <div class="symbol">.</div>
+                    <h4>Qualquer caractere</h4>
+                    <p>g.to = gato, geto</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">^</div>
+                    <h4>Início da linha</h4>
+                    <p>^Olá = linha começa</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">$</div>
+                    <h4>Fim da linha</h4>
+                    <p>fim$ = linha termina</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">*</div>
+                    <h4>Zero ou mais</h4>
+                    <p>ab*c = ac, abc, abbc</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">+</div>
+                    <h4>Um ou mais</h4>
+                    <p>ab+c = abc, abbc</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">?</div>
+                    <h4>Zero ou um</h4>
+                    <p>colou?r = color, colour</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">[ ]</div>
+                    <h4>Lista</h4>
+                    <p>[aei] = a ou e ou i</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">\</div>
+                    <h4>Escape</h4>
+                    <p>\. = ponto literal</p>
+                </div>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>💡 Dica</h3>
+                <p>Use <code>grep -E</code> (regex estendido) para usar <code>+</code>, <code>?</code> e <code>|</code> sem escape!</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Classes de Caracteres -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Classes de Caracteres</h2>
+            <div class="grid-2">
+                <div>
+                    <table class="regex-table">
+                        <tr><th>Padrão</th><th>Significado</th></tr>
+                        <tr><td>[abc]</td><td>a, b ou c</td></tr>
+                        <tr><td>[a-z]</td><td>Letras minúsculas</td></tr>
+                        <tr><td>[A-Z]</td><td>Letras maiúsculas</td></tr>
+                        <tr><td>[0-9]</td><td>Dígitos</td></tr>
+                        <tr><td>[a-zA-Z]</td><td>Qualquer letra</td></tr>
+                        <tr><td>[^abc]</td><td>NÃO a, b ou c</td></tr>
+                    </table>
+                </div>
+                <div>
+                    <table class="regex-table">
+                        <tr><th>Atalho</th><th>Equivalente</th></tr>
+                        <tr><td>\d</td><td>[0-9] (dígito)</td></tr>
+                        <tr><td>\w</td><td>[a-zA-Z0-9_] (palavra)</td></tr>
+                        <tr><td>\s</td><td>Espaço, tab, newline</td></tr>
+                        <tr><td>\D</td><td>NÃO dígito</td></tr>
+                        <tr><td>\W</td><td>NÃO palavra</td></tr>
+                        <tr><td>\S</td><td>NÃO espaço</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="box-terminal" style="margin-top: 15px;">
+                <span class="comment"># Encontrar números de telefone (padrão simples)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -E</span> <span class="regex">"[0-9]{4}-[0-9]{4}"</span> contatos.txt<br>
+                <span class="output">João: <span class="match">9876-5432</span></span><br>
+                <span class="output">Maria: <span class="match">1234-5678</span></span>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: grep Básico -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔎 grep - Buscar Padrões</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p><strong>grep</strong> = Global Regular Expression Print</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Busca simples</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep</span> <span class="regex">"erro"</span> /var/log/syslog<br><br>
+
+                <span class="comment"># Ignorar maiúsculas/minúsculas (-i)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -i</span> <span class="regex">"erro"</span> arquivo.txt<br><br>
+
+                <span class="comment"># Mostrar número da linha (-n)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -n</span> <span class="regex">"função"</span> codigo.py<br>
+                <span class="output">15: def função_principal():</span><br>
+                <span class="output">42: def outra_função():</span><br><br>
+
+                <span class="comment"># Contar ocorrências (-c)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -c</span> <span class="regex">"warning"</span> log.txt<br>
+                <span class="output">23</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: grep Avançado -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🔎 grep - Opções Avançadas</h2>
+            <div class="box-terminal">
+                <span class="comment"># Inverter busca - linhas que NÃO contêm (-v)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -v</span> <span class="regex">"#"</span> config.conf <span class="comment"># Remove comentários</span><br><br>
+
+                <span class="comment"># Buscar em múltiplos arquivos (-r recursivo)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -r</span> <span class="regex">"TODO"</span> /projeto/<br><br>
+
+                <span class="comment"># Mostrar contexto (-A depois, -B antes, -C ambos)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -A 2</span> <span class="regex">"erro"</span> log.txt <span class="comment"># 2 linhas após</span><br><br>
+
+                <span class="comment"># Apenas nomes dos arquivos (-l)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -rl</span> <span class="regex">"senha"</span> /etc/<br>
+                <span class="output">/etc/shadow</span><br>
+                <span class="output">/etc/passwd</span><br><br>
+
+                <span class="comment"># Regex estendido (-E) para usar +, ?, |</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -E</span> <span class="regex">"erro|falha|warning"</span> log.txt
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <h3>📋 Flags mais usadas</h3>
+                <div class="grid-4">
+                    <div><code>-i</code> ignora case</div>
+                    <div><code>-n</code> nº linha</div>
+                    <div><code>-v</code> inverte</div>
+                    <div><code>-r</code> recursivo</div>
+                    <div><code>-c</code> conta</div>
+                    <div><code>-l</code> só arquivos</div>
+                    <div><code>-E</code> regex ext.</div>
+                    <div><code>-o</code> só match</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: sed Básico -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">✏️ sed - Substituir Texto</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p><strong>sed</strong> = Stream Editor (Editor de Fluxo)</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Substituir primeira ocorrência</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed</span> <span class="regex">'s/antigo/novo/'</span> arquivo.txt<br><br>
+
+                <span class="comment"># Substituir TODAS as ocorrências (g = global)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed</span> <span class="regex">'s/antigo/novo/g'</span> arquivo.txt<br><br>
+
+                <span class="comment"># Ignorar maiúsculas (-i flag no padrão)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed</span> <span class="regex">'s/erro/ERRO/gi'</span> log.txt<br><br>
+
+                <span class="comment"># Editar arquivo diretamente (-i)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed -i</span> <span class="regex">'s/http/https/g'</span> config.txt<br>
+                <span class="comment"># ⚠️ Cuidado! Modifica o arquivo original!</span>
+            </div>
+            <div class="content-box box-warning" style="margin-top: 15px;">
+                <p>💡 <strong>Sintaxe:</strong> <code>sed 's/BUSCAR/SUBSTITUIR/flags'</code></p>
+                <p>O <code>s</code> significa "substitute" (substituir)</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: sed Avançado -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">✏️ sed - Comandos Avançados</h2>
+            <div class="box-terminal">
+                <span class="comment"># Deletar linhas que contêm padrão</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed</span> <span class="regex">'/comentario/d'</span> arquivo.txt<br><br>
+
+                <span class="comment"># Deletar linhas vazias</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed</span> <span class="regex">'/^$/d'</span> arquivo.txt<br><br>
+
+                <span class="comment"># Mostrar apenas linhas específicas (linha 5 a 10)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed -n</span> <span class="regex">'5,10p'</span> arquivo.txt<br><br>
+
+                <span class="comment"># Substituir apenas na linha 3</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed</span> <span class="regex">'3s/velho/novo/'</span> arquivo.txt<br><br>
+
+                <span class="comment"># Múltiplas substituições</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed -e</span> <span class="regex">'s/a/A/g'</span> <span class="command">-e</span> <span class="regex">'s/b/B/g'</span> arquivo.txt<br><br>
+
+                <span class="comment"># Usar referência ao match (&)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">sed</span> <span class="regex">'s/[0-9]*/[&]/'</span> numeros.txt<br>
+                <span class="output">[123] texto [456]</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: awk Básico -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📊 awk - Processar Colunas</h2>
+            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 15px;">
+                <p><strong>awk</strong> = Linguagem para processar texto em colunas</p>
+            </div>
+            <div class="box-terminal">
+                <span class="comment"># Arquivo de exemplo (separado por espaços)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat funcionarios.txt</span><br>
+                <span class="output">João   Vendas   3500</span><br>
+                <span class="output">Maria  TI       4200</span><br>
+                <span class="output">Pedro  RH       3800</span><br><br>
+
+                <span class="comment"># Imprimir coluna 1 (nome)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk</span> <span class="regex">'{print $1}'</span> funcionarios.txt<br>
+                <span class="output">João</span><br>
+                <span class="output">Maria</span><br>
+                <span class="output">Pedro</span><br><br>
+
+                <span class="comment"># Imprimir colunas 1 e 3 (nome e salário)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk</span> <span class="regex">'{print $1, $3}'</span> funcionarios.txt<br>
+                <span class="output">João 3500</span><br>
+                <span class="output">Maria 4200</span>
+            </div>
+            <div class="content-box box-info" style="margin-top: 15px;">
+                <p>💡 <code>$1</code> = 1ª coluna, <code>$2</code> = 2ª coluna... <code>$0</code> = linha inteira</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: awk Avançado -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📊 awk - Recursos Avançados</h2>
+            <div class="box-terminal">
+                <span class="comment"># Filtrar linhas (salário > 4000)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk</span> <span class="regex">'$3 > 4000 {print $1, $3}'</span> funcionarios.txt<br>
+                <span class="output">Maria 4200</span><br><br>
+
+                <span class="comment"># Definir separador (-F para CSV)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk -F','</span> <span class="regex">'{print $2}'</span> dados.csv<br><br>
+
+                <span class="comment"># Somar valores</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk</span> <span class="regex">'{soma += $3} END {print "Total:", soma}'</span> funcionarios.txt<br>
+                <span class="output">Total: 11500</span><br><br>
+
+                <span class="comment"># Formatar saída</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk</span> <span class="regex">'{printf "Nome: %-10s Salário: R$ %d\n", $1, $3}'</span> func.txt<br>
+                <span class="output">Nome: João       Salário: R$ 3500</span><br><br>
+
+                <span class="comment"># Contar linhas</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk</span> <span class="regex">'END {print NR}'</span> arquivo.txt
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Exemplos Práticos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Exemplos Práticos do Dia a Dia</h2>
+            <div class="box-terminal">
+                <span class="comment"># 1. Encontrar IPs em um log</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -Eo</span> <span class="regex">"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"</span> access.log<br><br>
+
+                <span class="comment"># 2. Remover linhas em branco e comentários</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -v</span> <span class="regex">"^#\|^$"</span> config.conf<br><br>
+
+                <span class="comment"># 3. Extrair emails de um arquivo</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">grep -Eo</span> <span class="regex">"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"</span> contatos.txt<br><br>
+
+                <span class="comment"># 4. Substituir espaços por underscore em nomes de arquivos</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls | sed</span> <span class="regex">'s/ /_/g'</span><br><br>
+
+                <span class="comment"># 5. Ver os 10 IPs que mais acessaram</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">awk</span> <span class="regex">'{print $1}'</span> access.log | sort | uniq -c | sort -rn | head
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Resumo dos Comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Comandos e Metacaracteres</h2>
+            <div class="grid-3">
+                <div class="command-card">
+                    <div class="cmd">grep</div>
+                    <h4>Buscar padrões</h4>
+                    <p>grep "texto" arquivo</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">sed</div>
+                    <h4>Substituir texto</h4>
+                    <p>sed 's/a/b/g' arq</p>
+                </div>
+                <div class="command-card">
+                    <div class="cmd">awk</div>
+                    <h4>Processar colunas</h4>
+                    <p>awk '{print $1}'</p>
+                </div>
+            </div>
+            <div class="section-divider" style="margin-top: 20px;">Metacaracteres Essenciais</div>
+            <div class="grid-4">
+                <div class="regex-card">
+                    <div class="symbol">.</div>
+                    <p>Qualquer</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">^</div>
+                    <p>Início</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">$</div>
+                    <p>Fim</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">*</div>
+                    <p>0 ou +</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">+</div>
+                    <p>1 ou +</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">[ ]</div>
+                    <p>Lista</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">|</div>
+                    <p>OU</p>
+                </div>
+                <div class="regex-card">
+                    <div class="symbol">\</div>
+                    <p>Escape</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Quiz -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
+            <p style="text-align: center; margin-bottom: 10px;">Arraste os comandos/símbolos para suas funções!</p>
+            
+            <div class="drag-drop-container">
+                <div class="col-questions">
+                    <div class="question-item">
+                        <div class="question-text">Buscar padrões em arquivos</div>
+                        <div class="drop-zone" data-correct="grep">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Substituir texto</div>
+                        <div class="drop-zone" data-correct="sed">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Processar colunas</div>
+                        <div class="drop-zone" data-correct="awk">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Início da linha</div>
+                        <div class="drop-zone" data-correct="^">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Qualquer caractere</div>
+                        <div class="drop-zone" data-correct=".">Arraste aqui</div>
+                    </div>
+                    <div class="question-item">
+                        <div class="question-text">Zero ou mais repetições</div>
+                        <div class="drop-zone" data-correct="*">Arraste aqui</div>
+                    </div>
+                </div>
+                <div class="col-answers" id="answersPool"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
+                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            </div>
+            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 14: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🔍</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns!</h2>
+                <div class="content-box box-success" style="max-width: 750px;">
+                    <h3>📚 O que aprendemos:</h3>
+                    <div class="grid-2" style="text-align: left; margin-top: 15px;">
+                        <div>
+                            <div class="bullet-point">Metacaracteres: . ^ $ * +</div>
+                            <div class="bullet-point">Classes: [a-z] [0-9]</div>
+                            <div class="bullet-point">grep: buscar padrões</div>
+                        </div>
+                        <div>
+                            <div class="bullet-point">sed: substituir texto</div>
+                            <div class="bullet-point">awk: processar colunas</div>
+                            <div class="bullet-point">Combinar ferramentas</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-box box-highlight" style="max-width: 750px; margin-top: 20px;">
+                    <h3>🎯 Pratique agora:</h3>
+                    <p style="font-family: monospace; font-size: 0.95em; margin-top: 10px;">
+                        <code>grep -E "^[A-Z]" /etc/passwd | awk -F: '{print $1}'</code>
+                    </p>
+                    <p style="margin-top: 10px;">Lista usuários que começam com letra maiúscula!</p>
+                </div>
+                <div class="content-box box-info" style="max-width: 750px; margin-top: 15px;">
+                    <p>💡 <strong>Dica:</strong> Use <a href="https://regex101.com" target="_blank" style="color: var(--primary);">regex101.com</a> para testar suas expressões!</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        const answersData = [
+            { id: 'grep', text: 'grep' },
+            { id: 'sed', text: 'sed' },
+            { id: 'awk', text: 'awk' },
+            { id: '^', text: '^' },
+            { id: '.', text: '.' },
+            { id: '*', text: '*' }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let draggedItem = null;
+
+        function initQuiz() {
+            const pool = document.getElementById('answersPool');
+            pool.innerHTML = '';
+            shuffleArray([...answersData]).forEach(ans => {
+                const div = document.createElement('div');
+                div.className = 'answer-item';
+                div.draggable = true;
+                div.textContent = ans.text;
+                div.dataset.id = ans.id;
+                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
+                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
+                pool.appendChild(div);
+            });
+
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.innerHTML = 'Arraste aqui';
+                zone.classList.remove('has-answer');
+                zone.style.background = '#f8fafc';
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    if (draggedItem && !zone.querySelector('.answer-item')) {
+                        zone.innerHTML = '';
+                        zone.appendChild(draggedItem);
+                        draggedItem.classList.add('in-drop-zone');
+                        zone.classList.add('has-answer');
+                    }
+                });
+            });
+            document.getElementById('quizResult').style.display = 'none';
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => {
+                const answer = zone.querySelector('.answer-item');
+                if (answer && answer.dataset.id === zone.dataset.correct) {
+                    correct++;
+                    zone.style.background = '#d1fae5';
+                } else {
+                    zone.style.background = '#fee2e2';
+                }
+            });
+            const resultDiv = document.getElementById('quizResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
+            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você é ninja do regex!</p>';
+            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
+            else resultDiv.innerHTML += '<p>📚 Pratique com grep e sed!</p>';
+        }
+
+        function resetQuiz() { initQuiz(); }
+        initQuiz();
+    </script>
+</body>
+</html>
