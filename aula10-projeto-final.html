@@ -318,3 +318,140 @@
                 <div class="checklist-item"><input type="checkbox" id="c14"><label for="c14">Regex para padrões</label><span class="aula-ref">Aula 09</span></div>
             </div>
         </div>
+        <!-- SLIDE 10: Teste Final -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🧪 Teste Final: Colaboração</h2>
+            <div class="section-divider">Verificando se dev1 e dev2 podem colaborar</div>
+            <div class="box-terminal">
+<span class="comment"># 1. Logar como dev1</span>
+<span class="root">root@linux</span>:~# <span class="command">su - dev1</span>
+
+<span class="comment"># 2. Criar arquivo na pasta de código</span>
+<span class="prompt">dev1@linux</span>:~$ <span class="command">echo "# Projeto TechCorp" > /projetos/techcorp/codigo/README.md</span>
+
+<span class="comment"># 3. Verificar permissões (grupo deve ser devs!)</span>
+<span class="prompt">dev1@linux</span>:~$ <span class="command">ls -l /projetos/techcorp/codigo/</span>
+<span class="output">-rw-rw-r-- 1 dev1 <span class="highlight">devs</span> 18 jan 20 README.md</span>
+
+<span class="comment"># 4. Sair e testar com dev2</span>
+<span class="prompt">dev1@linux</span>:~$ <span class="command">exit</span>
+<span class="root">root@linux</span>:~# <span class="command">su - dev2</span>
+
+<span class="comment"># 5. dev2 consegue editar arquivo de dev1?</span>
+<span class="prompt">dev2@linux</span>:~$ <span class="command">echo "Editado por dev2" >> /projetos/techcorp/codigo/README.md</span>
+<span class="prompt">dev2@linux</span>:~$ <span class="command">cat /projetos/techcorp/codigo/README.md</span>
+<span class="output"># Projeto TechCorp</span>
+<span class="output">Editado por dev2</span>
+<span class="comment"># ✅ Funciona! Colaboração OK!</span></div>
+            <div class="content-box box-success" style="margin-top: 15px;"><h3>✅ Ambiente colaborativo funcionando!</h3><p>O SGID garante que todos do grupo <code>devs</code> possam editar os mesmos arquivos!</p></div>
+        </div>
+
+        <!-- SLIDE 11: Checklist Final -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">✅ Checklist Final do Projeto</h2>
+            <div class="grid-2">
+                <div class="checklist" style="background: #f0fdf4;">
+                    <h3 style="color: #065f46; margin-bottom: 15px;">👥 Usuários (Aula 04)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f1"><label for="f1">Grupo devs criado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f2"><label for="f2">Grupo gestao criado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f3"><label for="f3">dev1, dev2, dev3 criados</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f4"><label for="f4">gerente nos dois grupos</label></div>
+                </div>
+                <div class="checklist" style="background: #f4f7fe;">
+                    <h3 style="color: #1e40af; margin-bottom: 15px;">🔐 Permissões (Aula 05)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f5"><label for="f5">codigo/ com grupo devs</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f6"><label for="f6">documentos/ com grupo gestao</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f7"><label for="f7">SGID ativado (2775)</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f8"><label for="f8">Colaboração testada OK</label></div>
+                </div>
+                <div class="checklist" style="background: #fffaf0;">
+                    <h3 style="color: #92400e; margin-bottom: 15px;">💾 Montagem (Aula 08)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f9"><label for="f9">Pendrive identificado</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f10"><label for="f10">Montado em /projetos/backup</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f11"><label for="f11">Backup dos arquivos feito</label></div>
+                </div>
+                <div class="checklist" style="background: #f3e8ff;">
+                    <h3 style="color: #7c3aed; margin-bottom: 15px;">🔍 Regex (Aula 09)</h3>
+                    <div class="checklist-item"><input type="checkbox" id="f12"><label for="f12">grep para filtrar logs</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f13"><label for="f13">awk para extrair dados</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="f14"><label for="f14">sed para substituir texto</label></div>
+                </div>
+            </div>
+            <div class="content-box box-highlight" style="margin-top: 20px; text-align: center;"><h3>🎯 Meta: Todos os itens marcados!</h3></div>
+        </div>
+        <!-- SLIDE 12: Conclusão -->
+        <div class="slide-card">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🎓🏆</div>
+                <h2 class="slide-subtitle" style="border: none;">Parabéns! Projeto Concluído!</h2>
+                <div class="content-box box-success" style="max-width: 800px;">
+                    <h3>🚀 O que você construiu:</h3>
+                    <div class="server-diagram" style="margin: 20px 0;">
+                        <div class="server-box" style="background: #d1fae5; color: #065f46;">👥 4 Usuários<br>2 Grupos</div>
+                        <div class="server-box" style="background: #dbeafe; color: #1e40af;">📁 Estrutura<br>Organizada</div>
+                        <div class="server-box" style="background: #fef3c7; color: #92400e;">🔐 Permissões<br>Colaborativas</div>
+                        <div class="server-box" style="background: #e0e7ff; color: #3730a3;">💾 Backup<br>Configurado</div>
+                    </div>
+                </div>
+                <div class="content-box box-highlight" style="max-width: 800px; margin-top: 20px;">
+                    <h3>📚 Aulas aplicadas neste projeto:</h3>
+                    <p style="margin-top: 10px;">
+                        <span class="aula-tag">Aula 02 - FHS</span>
+                        <span class="aula-tag">Aula 03 - Comandos</span>
+                        <span class="aula-tag">Aula 04 - Usuários</span>
+                        <span class="aula-tag">Aula 05 - Permissões</span>
+                        <span class="aula-tag">Aula 08 - Montagem</span>
+                        <span class="aula-tag">Aula 09 - Regex</span>
+                    </p>
+                </div>
+                <div class="content-box box-info" style="max-width: 800px; margin-top: 20px;">
+                    <h3>💼 Você está pronto para o próximo nível!</h3>
+                    <p>No próximo bimestre: Shell Script, Servidores, Redes e muito mais!</p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">⬅️ Anterior</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Próximo ➡️</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-card');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('current-slide').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            const saved = localStorage.getItem('proj_' + cb.id);
+            if (saved === 'true') cb.checked = true;
+            cb.addEventListener('change', () => localStorage.setItem('proj_' + cb.id, cb.checked));
+        });
+    </script>
+</body>
+</html>
