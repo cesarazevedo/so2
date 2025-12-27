@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -13,6 +14,7 @@
             --text-light: #718096;
             --accent-green: #38ef7d;
             --accent-red: #ff758c;
+            --accent-orange: #f39c12;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -126,6 +128,8 @@
         .box-terminal .pipe { color: #f6e05e; font-weight: bold; }
         .box-terminal .redirect { color: #fc8181; font-weight: bold; }
         .box-terminal .highlight { color: #f6e05e; }
+        .box-terminal .path-absolute { color: #fc8181; }
+        .box-terminal .path-relative { color: #38ef7d; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
         .bullet-point {
@@ -202,6 +206,34 @@
             font-size: 1.1em;
             font-weight: bold;
         }
+        /* Estilos para árvore de diretórios */
+        .tree-container {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+        }
+        .tree-item {
+            margin: 5px 0;
+            padding-left: 0;
+        }
+        .tree-item.level-1 { padding-left: 20px; color: #667eea; }
+        .tree-item.level-2 { padding-left: 40px; color: #38ef7d; }
+        .tree-item.level-3 { padding-left: 60px; color: #f39c12; }
+        .tree-icon { margin-right: 8px; }
+        .path-example {
+            background: #1a202c;
+            color: #38ef7d;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            border-left: 4px solid;
+        }
+        .path-absolute-box { border-color: #fc8181; }
+        .path-relative-box { border-color: #38ef7d; }
         .nav-controls {
             position: fixed;
             bottom: 20px;
@@ -302,7 +334,7 @@
             </div>
         </div>
         <div class="slide-counter">
-            <span id="current-slide">1</span> / <span id="total-slides">14</span>
+            <span id="current-slide">1</span> / <span id="total-slides">17</span>
         </div>
     </header>
 
@@ -315,7 +347,7 @@
                 <h1 class="slide-title">Comandos Essenciais e Produtividade</h1>
                 <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
                     <p><strong>Domine o terminal Linux!</strong></p>
-                    <p style="margin-top: 10px; opacity: 0.8;">Navegação, manipulação de arquivos e truques de produtividade</p>
+                    <p style="margin-top: 10px; opacity: 0.8;">Navegação, caminhos, manipulação de arquivos e truques de produtividade</p>
                 </div>
                 <div class="box-terminal" style="margin-top: 30px; max-width: 700px;">
                     <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -la</span> <span class="pipe">|</span> <span class="command">grep ".txt"</span> <span class="redirect">></span> <span class="command">arquivos.txt</span><br>
@@ -387,7 +419,176 @@
             </div>
         </div>
 
-        <!-- SLIDE 4: Manipulação de Arquivos -->
+        <!-- SLIDE 4: Árvore de Diretórios -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🌳 Estrutura de Diretórios do Linux</h2>
+            <div class="content-box box-info" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em;">Tudo começa na <strong>raiz</strong> (<code>/</code>)</p>
+            </div>
+
+            <div class="tree-container">
+                <div class="tree-item"><span class="tree-icon">📁</span><strong>/</strong> (raiz)</div>
+                <div class="tree-item level-1"><span class="tree-icon">📁</span>home/</div>
+                <div class="tree-item level-2"><span class="tree-icon">👤</span>usuario/</div>
+                <div class="tree-item level-3"><span class="tree-icon">📄</span>Documentos/</div>
+                <div class="tree-item level-3"><span class="tree-icon">📥</span>Downloads/</div>
+                <div class="tree-item level-1"><span class="tree-icon">📁</span>etc/</div>
+                <div class="tree-item level-1"><span class="tree-icon">📁</span>var/</div>
+                <div class="tree-item level-2"><span class="tree-icon">📁</span>www/</div>
+                <div class="tree-item level-3"><span class="tree-icon">🌐</span>html/</div>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px;">
+                <h3>💡 Conceitos importantes:</h3>
+                <div class="bullet-point"><code>/</code> = raiz (topo de tudo)</div>
+                <div class="bullet-point"><code>~</code> = sua pasta pessoal (/home/usuario)</div>
+                <div class="bullet-point"><code>.</code> = pasta atual</div>
+                <div class="bullet-point"><code>..</code> = pasta pai (uma acima)</div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Caminhos Absolutos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📍 Caminho Absoluto</h2>
+            <div class="section-divider">Endereço completo desde a raiz</div>
+
+            <div class="content-box box-warning" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.3em;">Sempre começa com <code style="font-size: 1.5em; color: #fc8181;">/</code></p>
+                <p style="margin-top: 10px;">Como um endereço completo: "Rua X, nº 123, Bairro Y, Cidade Z"</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🏠 Analogia: Endereço</h3>
+                    <p><strong>Endereço completo:</strong></p>
+                    <p style="margin-top: 10px;">Avenida Brasil, 1500<br>
+                    Centro, Mossoró-RN<br>
+                    CEP 59600-000</p>
+                    <p style="margin-top: 10px; color: var(--primary);">Funciona de <strong>qualquer lugar</strong>!</p>
+                </div>
+                <div class="content-box box-success">
+                    <h3>💻 No Linux</h3>
+                    <p><strong>Caminho absoluto:</strong></p>
+                    <div class="path-example path-absolute-box">
+                        <span class="path-absolute">/home/usuario/Documentos/relatorio.txt</span>
+                    </div>
+                    <p style="margin-top: 10px; color: var(--primary);">Funciona de <strong>qualquer pasta</strong>!</p>
+                </div>
+            </div>
+
+            <div class="box-terminal" style="margin-top: 20px;">
+                <span class="comment"># Estando em qualquer lugar, funciona:</span><br>
+                <span class="prompt">usuario@linux</span>:/etc$ <span class="command">cd <span class="path-absolute">/home/usuario/Documentos</span></span><br>
+                <span class="prompt">usuario@linux</span>:~/Documentos$ <span class="comment"># Chegou!</span><br><br>
+
+                <span class="comment"># Copiar usando caminho absoluto</span><br>
+                <span class="prompt">usuario@linux</span>:/tmp$ <span class="command">cp <span class="path-absolute">/home/usuario/notas.txt</span> .</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Caminhos Relativos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🧭 Caminho Relativo</h2>
+            <div class="section-divider">Caminho a partir de onde você está</div>
+
+            <div class="content-box box-success" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.3em;"><strong>NÃO</strong> começa com <code>/</code></p>
+                <p style="margin-top: 10px;">Como direções: "Vire à esquerda, depois 2 quadras à frente"</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box box-info">
+                    <h3>🚶 Analogia: Direções</h3>
+                    <p><strong>Você está na praça:</strong></p>
+                    <p style="margin-top: 10px;">"Vá duas quadras à frente,<br>
+                    depois vire à direita"</p>
+                    <p style="margin-top: 10px; color: var(--accent-red);">Depende de <strong>onde você está</strong>!</p>
+                </div>
+                <div class="content-box box-highlight">
+                    <h3>💻 No Linux</h3>
+                    <p><strong>Caminho relativo:</strong></p>
+                    <div class="path-example path-relative-box">
+                        <span class="path-relative">./Documentos/relatorio.txt</span><br>
+                        <span class="path-relative">../Downloads/foto.jpg</span>
+                    </div>
+                    <p style="margin-top: 10px; color: var(--accent-red);">Depende de <strong>onde você está</strong>!</p>
+                </div>
+            </div>
+
+            <div class="content-box box-warning" style="margin-top: 20px;">
+                <h3>⚙️ Símbolos especiais:</h3>
+                <div class="bullet-point"><code>.</code> = pasta atual (onde estou agora)</div>
+                <div class="bullet-point"><code>..</code> = pasta pai (uma pasta acima)</div>
+                <div class="bullet-point"><code>../.. </code> = duas pastas acima</div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Comparação Absoluto vs Relativo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚖️ Absoluto vs Relativo</h2>
+            
+            <div class="content-box box-info" style="margin-bottom: 20px;">
+                <h3>📌 Situação:</h3>
+                <p>Você está em: <code>/home/usuario</code></p>
+                <p>Quer ir para: <code>/home/usuario/Documentos/projetos</code></p>
+            </div>
+
+            <div class="grid-2">
+                <div class="content-box box-warning">
+                    <h3>📍 Caminho Absoluto</h3>
+                    <div class="path-example path-absolute-box">
+                        <span class="command">cd <span class="path-absolute">/home/usuario/Documentos/projetos</span></span>
+                    </div>
+                    <p style="margin-top: 15px;"><strong>✅ Vantagens:</strong></p>
+                    <div class="bullet-point">Funciona de qualquer lugar</div>
+                    <div class="bullet-point">Sem ambiguidade</div>
+                    <p style="margin-top: 10px;"><strong>❌ Desvantagens:</strong></p>
+                    <div class="bullet-point">Mais longo para digitar</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🧭 Caminho Relativo</h3>
+                    <div class="path-example path-relative-box">
+                        <span class="command">cd <span class="path-relative">Documentos/projetos</span></span><br>
+                        <span class="comment"># ou</span><br>
+                        <span class="command">cd <span class="path-relative">./Documentos/projetos</span></span>
+                    </div>
+                    <p style="margin-top: 15px;"><strong>✅ Vantagens:</strong></p>
+                    <div class="bullet-point">Mais curto e rápido</div>
+                    <div class="bullet-point">Usa Tab para autocompletar</div>
+                    <p style="margin-top: 10px;"><strong>❌ Desvantagens:</strong></p>
+                    <div class="bullet-point">Depende de onde você está</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Exemplos práticos de caminhos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Exemplos Práticos de Caminhos</h2>
+            
+            <div class="box-terminal">
+                <span class="comment"># Situação: Estou em /home/usuario</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">pwd</span><br>
+                <span class="output">/home/usuario</span><br><br>
+
+                <span class="comment"># RELATIVO - Ir para Documentos</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cd <span class="path-relative">Documentos</span></span><br>
+                <span class="prompt">usuario@linux</span>:~/Documentos$ <br><br>
+
+                <span class="comment"># RELATIVO - Voltar para pasta pai (usuario)</span><br>
+                <span class="prompt">usuario@linux</span>:~/Documentos$ <span class="command">cd <span class="path-relative">..</span></span><br>
+                <span class="prompt">usuario@linux</span>:~$ <br><br>
+
+                <span class="comment"># RELATIVO - Ir para Downloads a partir de Documentos</span><br>
+                <span class="prompt">usuario@linux</span>:~/Documentos$ <span class="command">cd <span class="path-relative">../Downloads</span></span><br>
+                <span class="comment"># .. = volta para /home/usuario, depois entra em Downloads</span><br><br>
+
+                <span class="comment"># ABSOLUTO - Funciona de qualquer lugar!</span><br>
+                <span class="prompt">usuario@linux</span>:/etc$ <span class="command">cd <span class="path-absolute">/home/usuario/Documentos</span></span><br>
+                <span class="prompt">usuario@linux</span>:~/Documentos$ 
+            </div>
+        </div>
+
+        <!-- SLIDE 9: Manipulação de Arquivos -->
         <div class="slide-card">
             <h2 class="slide-subtitle">📁 Manipulação de Arquivos</h2>
             <div class="section-divider">Criar, copiar, mover e remover</div>
@@ -411,11 +612,14 @@
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">mkdir MeuProjeto</span> <span class="comment"># Cria pasta</span><br>
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">touch notas.txt</span> <span class="comment"># Cria arquivo</span><br>
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">cp notas.txt backup.txt</span> <span class="comment"># Copia</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">mv backup.txt MeuProjeto/</span> <span class="comment"># Move para pasta</span>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">mv backup.txt MeuProjeto/</span> <span class="comment"># Move para pasta</span><br><br>
+
+                <span class="comment"># Usando caminhos absolutos e relativos</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cp <span class="path-relative">./notas.txt</span> <span class="path-absolute">/tmp/backup.txt</span></span>
             </div>
         </div>
 
-        <!-- SLIDE 5: rm e visualização -->
+        <!-- SLIDE 10: rm e visualização -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🗑️ Remover e 👀 Visualizar</h2>
             <div class="grid-2">
@@ -444,7 +648,7 @@
             </div>
         </div>
 
-        <!-- SLIDE 6: Resumo Comandos Essenciais -->
+        <!-- SLIDE 11: Resumo Comandos Essenciais -->
         <div class="slide-card">
             <h2 class="slide-subtitle">📋 Resumo: Comandos Essenciais</h2>
             <div class="grid-3">
@@ -486,11 +690,11 @@
                 </div>
             </div>
             <div class="content-box box-success" style="margin-top: 25px; text-align: center;">
-                <p style="font-size: 1.1em;">💡 Esses 9 comandos cobrem <strong>90% do uso diário</strong> do terminal!</p>
+                <p style="font-size: 1.1em;">💡 Esses comandos + <strong>caminhos</strong> cobrem 90% do uso diário!</p>
             </div>
         </div>
 
-        <!-- SLIDE 7: Tab Autocompletar -->
+        <!-- SLIDE 12: Tab Autocompletar -->
         <div class="slide-card">
             <h2 class="slide-subtitle">⚡ Produtividade: Tab Autocompleta</h2>
             <div class="section-divider">🔮 A tecla mágica que economiza tempo!</div>
@@ -506,7 +710,9 @@
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">cat rel</span><span class="highlight">[Tab]</span> → <span class="command">cat relatorio.txt</span><br><br>
                 <span class="comment"># Se tiver várias opções, Tab Tab mostra todas!</span><br>
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">cd D</span><span class="highlight">[Tab][Tab]</span><br>
-                <span class="output">Desktop/  Documentos/  Downloads/</span>
+                <span class="output">Desktop/  Documentos/  Downloads/</span><br><br>
+                <span class="comment"># Funciona com caminhos longos!</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">cd /ho</span><span class="highlight">[Tab]</span>/us<span class="highlight">[Tab]</span>/Do<span class="highlight">[Tab]</span>
             </div>
 
             <div class="content-box box-success" style="margin-top: 20px;">
@@ -518,7 +724,7 @@
             </div>
         </div>
 
-        <!-- SLIDE 8: Histórico -->
+        <!-- SLIDE 13: Histórico -->
         <div class="slide-card">
             <h2 class="slide-subtitle">📜 Histórico de Comandos</h2>
             <div class="grid-2">
@@ -551,7 +757,7 @@
             </div>
         </div>
 
-        <!-- SLIDE 9: Atalhos de Teclado -->
+        <!-- SLIDE 14: Atalhos de Teclado -->
         <div class="slide-card">
             <h2 class="slide-subtitle">⌨️ Atalhos Essenciais</h2>
             <div class="grid-2">
@@ -577,7 +783,7 @@
             </div>
         </div>
 
-        <!-- SLIDE 10: Pipe -->
+        <!-- SLIDE 15: Pipe -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🔗 Pipe: Conectando Comandos</h2>
             <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
@@ -607,7 +813,7 @@
             </div>
         </div>
 
-        <!-- SLIDE 11: Redirecionamento -->
+        <!-- SLIDE 16: Redirecionamento -->
         <div class="slide-card">
             <h2 class="slide-subtitle">📤 Redirecionamento: > e >></h2>
             <div class="grid-2">
@@ -638,73 +844,7 @@
             </div>
         </div>
 
-        <!-- SLIDE 12: Combinando Tudo -->
-        <div class="slide-card">
-            <h2 class="slide-subtitle">🚀 Combinando Tudo!</h2>
-            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
-                <p style="font-size: 1.1em;">O poder está em <strong>combinar</strong> pipes e redirecionamentos!</p>
-            </div>
-
-            <div class="box-terminal">
-                <span class="comment"># Filtrar erros do log e salvar</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">cat /var/log/syslog</span> <span class="pipe">|</span> <span class="command">grep error</span> <span class="redirect">></span> <span class="command">erros.txt</span><br><br>
-
-                <span class="comment"># Top 5 maiores arquivos</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">du -h *</span> <span class="pipe">|</span> <span class="command">sort -rh</span> <span class="pipe">|</span> <span class="command">head -5</span><br><br>
-
-                <span class="comment"># Contar arquivos .txt e salvar resultado</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls</span> <span class="pipe">|</span> <span class="command">grep .txt</span> <span class="pipe">|</span> <span class="command">wc -l</span> <span class="redirect" style="color: #38ef7d;">>></span> <span class="command">contagem.txt</span>
-            </div>
-
-            <div class="content-box box-success" style="margin-top: 20px;">
-                <h3>💡 Fluxo dos dados</h3>
-                <p><code>comando1</code> → <code>|</code> → <code>comando2</code> → <code>|</code> → <code>comando3</code> → <code>></code> → <code>arquivo</code></p>
-            </div>
-        </div>
-
-        <!-- SLIDE 13: Quiz -->
-        <div class="slide-card">
-            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
-            <p style="text-align: center; margin-bottom: 15px;">Arraste os comandos/símbolos para suas funções!</p>
-            
-            <div class="drag-drop-container">
-                <div class="col-questions">
-                    <div class="question-item">
-                        <div class="question-text">Listar arquivos</div>
-                        <div class="drop-zone" data-correct="ls">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Mudar de pasta</div>
-                        <div class="drop-zone" data-correct="cd">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Copiar arquivo</div>
-                        <div class="drop-zone" data-correct="cp">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Conecta comandos</div>
-                        <div class="drop-zone" data-correct="|">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Salva em arquivo (sobrescreve)</div>
-                        <div class="drop-zone" data-correct=">">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Autocompleta nomes</div>
-                        <div class="drop-zone" data-correct="Tab">Arraste aqui</div>
-                    </div>
-                </div>
-                <div class="col-answers" id="answersPool"></div>
-            </div>
-
-            <div style="text-align: center; margin-top: 18px; display: flex; gap: 10px; justify-content: center;">
-                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
-                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
-            </div>
-            <div id="quizResult" class="quiz-result"></div>
-        </div>
-
-        <!-- SLIDE 14: Conclusão -->
+        <!-- SLIDE 17: Conclusão -->
         <div class="slide-card">
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
                 <div style="font-size: 4em; margin-bottom: 20px;">🎓⌨️</div>
@@ -714,22 +854,29 @@
                     <div class="grid-2" style="text-align: left; margin-top: 15px;">
                         <div>
                             <div class="bullet-point"><code>pwd, ls, cd</code> Navegação</div>
+                            <div class="bullet-point">Caminhos absolutos e relativos</div>
                             <div class="bullet-point"><code>mkdir, touch</code> Criar</div>
                             <div class="bullet-point"><code>cp, mv, rm</code> Manipular</div>
                         </div>
                         <div>
                             <div class="bullet-point"><span class="keyboard-key">Tab</span> Autocompleta</div>
+                            <div class="bullet-point">Histórico de comandos</div>
                             <div class="bullet-point"><code>|</code> Pipe (conecta)</div>
                             <div class="bullet-point"><code>> >></code> Redireciona</div>
                         </div>
                     </div>
                 </div>
                 <div class="content-box box-highlight" style="max-width: 750px; margin-top: 20px;">
-                    <h3>🎯 Pratique este comando:</h3>
-                    <p style="font-family: monospace; font-size: 1em; margin-top: 10px;">
-                        <code>ls -la | grep ".txt" | wc -l >> contagem.txt</code>
-                    </p>
-                    <p style="margin-top: 10px;">Conta arquivos .txt e salva o resultado!</p>
+                    <h3>🎯 Pratique:</h3>
+                    <div style="font-family: monospace; font-size: 0.95em; margin-top: 10px; text-align: left;">
+                        <code>cd /home</code><br>
+                        <code>cd ../etc</code> <span style="color: #718096;"># caminho relativo</span><br>
+                        <code>cd /home/usuario/Documentos</code> <span style="color: #718096;"># absoluto</span><br>
+                        <code>ls -la | grep ".txt" >> lista.txt</code>
+                    </div>
+                </div>
+                <div class="content-box box-info" style="max-width: 750px; margin-top: 20px;">
+                    <p style="font-size: 1.1em;">🔑 <strong>Lembre:</strong> <code>/</code> = absoluto | sem <code>/</code> = relativo</p>
                 </div>
                 <div style="margin-top: 35px;">
                     <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
@@ -771,81 +918,7 @@
             if (e.key === 'ArrowRight') changeSlide(1);
         });
 
-        const answersData = [
-            { id: 'ls', text: 'ls' },
-            { id: 'cd', text: 'cd' },
-            { id: 'cp', text: 'cp' },
-            { id: '|', text: '|' },
-            { id: '>', text: '>' },
-            { id: 'Tab', text: 'Tab' }
-        ];
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        let draggedItem = null;
-
-        function initQuiz() {
-            const pool = document.getElementById('answersPool');
-            pool.innerHTML = '';
-            shuffleArray([...answersData]).forEach(ans => {
-                const div = document.createElement('div');
-                div.className = 'answer-item';
-                div.draggable = true;
-                div.textContent = ans.text;
-                div.dataset.id = ans.id;
-                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
-                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
-                pool.appendChild(div);
-            });
-
-            document.querySelectorAll('.drop-zone').forEach(zone => {
-                zone.innerHTML = 'Arraste aqui';
-                zone.classList.remove('has-answer');
-                zone.style.background = '#f8fafc';
-                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
-                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-                zone.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    zone.classList.remove('drag-over');
-                    if (draggedItem && !zone.querySelector('.answer-item')) {
-                        zone.innerHTML = '';
-                        zone.appendChild(draggedItem);
-                        draggedItem.classList.add('in-drop-zone');
-                        zone.classList.add('has-answer');
-                    }
-                });
-            });
-            document.getElementById('quizResult').style.display = 'none';
-        }
-
-        function checkAnswers() {
-            let correct = 0;
-            const zones = document.querySelectorAll('.drop-zone');
-            zones.forEach(zone => {
-                const answer = zone.querySelector('.answer-item');
-                if (answer && answer.dataset.id === zone.dataset.correct) {
-                    correct++;
-                    zone.style.background = '#d1fae5';
-                } else {
-                    zone.style.background = '#fee2e2';
-                }
-            });
-            const resultDiv = document.getElementById('quizResult');
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
-            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina o terminal!</p>';
-            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
-            else resultDiv.innerHTML += '<p>📚 Pratique mais no terminal!</p>';
-        }
-
-        function resetQuiz() { initQuiz(); }
-        initQuiz();
+        showSlide(0);
     </script>
 </body>
 </html>
