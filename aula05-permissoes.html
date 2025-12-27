@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -132,7 +133,7 @@
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
         .bullet-point {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             margin: 8px 0;
             font-size: 1.05em;
             line-height: 1.4;
@@ -143,6 +144,7 @@
             font-weight: bold;
             font-size: 1.5em;
             margin-right: 10px;
+            margin-top: -3px;
         }
         .command-card {
             background: white;
@@ -175,7 +177,6 @@
             font-size: 1.1em;
             font-weight: bold;
         }
-        /* Permissões visuais */
         .perm-display {
             display: flex;
             justify-content: center;
@@ -197,25 +198,6 @@
         .perm-owner { background: #d1fae5; color: #065f46; }
         .perm-group { background: #fef3c7; color: #92400e; }
         .perm-others { background: #fee2e2; color: #991b1b; }
-        .perm-legend {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        .perm-legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9em;
-        }
-        .perm-legend-item .dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-        }
-        /* Calculadora octal */
         .octal-calc {
             display: flex;
             justify-content: center;
@@ -369,7 +351,7 @@
                 <h1 class="slide-title">Permissões e ACL</h1>
                 <div class="content-box box-highlight" style="text-align: center; font-size: 1.2em;">
                     <p><strong>Controle quem pode fazer o quê!</strong></p>
-                    <p style="margin-top: 10px; opacity: 0.8;">chmod, chown, chgrp e umask</p>
+                    <p style="margin-top: 10px; opacity: 0.8;">chmod, chown, getfacl e setfacl</p>
                 </div>
                 <div class="box-terminal" style="margin-top: 30px; max-width: 600px;">
                     <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -l script.sh</span><br>
@@ -377,7 +359,7 @@
                     <span class="comment"># O que significam essas letras? 🤔</span>
                 </div>
                 <div class="content-box box-info" style="margin-top: 30px;">
-                    💡 Hoje você vai entender o <strong>sistema de segurança</strong> do Linux!
+                    💡 Hoje você vai dominar <strong>permissões tradicionais E avançadas (ACL)</strong>!
                 </div>
             </div>
         </div>
@@ -399,8 +381,9 @@
                     <p style="line-height: 1.6;">Cada arquivo/pasta tem:</p>
                     <div class="bullet-point"><strong>Um dono</strong> (owner)</div>
                     <div class="bullet-point"><strong>Um grupo</strong> (group)</div>
-                    <div class="bullet-point"><strong>Permissões</strong> para cada um</div>
-                    <p style="margin-top: 15px;">Isso protege o sistema e os dados!</p>
+                    <div class="bullet-point"><strong>Permissões básicas</strong> (rwx)</div>
+                    <div class="bullet-point"><strong>ACL</strong> para regras extras</div>
+                    <p style="margin-top: 15px;">Proteção em camadas! 🛡️</p>
                 </div>
             </div>
             <div class="content-box box-success" style="text-align: center; margin-top: 20px;">
@@ -410,7 +393,7 @@
 
         <!-- SLIDE 3: Entendendo rwx -->
         <div class="slide-card">
-            <h2 class="slide-subtitle">📖 As 3 Permissões: r, w, x</h2>
+            <h2 class="slide-subtitle">📖 As 3 Permissões Básicas: r, w, x</h2>
             <div class="section-divider">Read (ler) • Write (escrever) • Execute (executar)</div>
             
             <div class="grid-3">
@@ -419,24 +402,27 @@
                     <h4>Read (Ler)</h4>
                     <p><strong>Arquivo:</strong> Ver conteúdo</p>
                     <p><strong>Pasta:</strong> Listar arquivos</p>
+                    <p style="margin-top: 8px; color: var(--primary);">Valor = 4</p>
                 </div>
                 <div class="content-box box-highlight" style="text-align: center;">
                     <h3 style="font-size: 2em;">w</h3>
                     <h4>Write (Escrever)</h4>
                     <p><strong>Arquivo:</strong> Modificar</p>
                     <p><strong>Pasta:</strong> Criar/deletar</p>
+                    <p style="margin-top: 8px; color: var(--primary);">Valor = 2</p>
                 </div>
                 <div class="content-box box-warning" style="text-align: center;">
                     <h3 style="font-size: 2em;">x</h3>
                     <h4>Execute (Executar)</h4>
-                    <p><strong>Arquivo:</strong> Rodar como programa</p>
+                    <p><strong>Arquivo:</strong> Rodar programa</p>
                     <p><strong>Pasta:</strong> Entrar (cd)</p>
+                    <p style="margin-top: 8px; color: var(--primary);">Valor = 1</p>
                 </div>
             </div>
 
             <div class="content-box box-info" style="margin-top: 20px;">
-                <h3>💡 O traço (-) significa "sem permissão"</h3>
-                <p><code>r--</code> = só leitura | <code>rw-</code> = leitura e escrita | <code>rwx</code> = tudo</p>
+                <h3>💡 Somando os valores:</h3>
+                <p><code>r--</code> = 4 | <code>rw-</code> = 6 | <code>rwx</code> = 7 | <code>r-x</code> = 5</p>
             </div>
         </div>
 
@@ -457,22 +443,11 @@
                 <div class="perm-char perm-others">-</div>
             </div>
 
-            <div class="perm-legend">
-                <div class="perm-legend-item">
-                    <div class="dot" style="background: #dbeafe;"></div>
-                    <span>Tipo (- arquivo, d pasta)</span>
-                </div>
-                <div class="perm-legend-item">
-                    <div class="dot" style="background: #d1fae5;"></div>
-                    <span>Dono (owner)</span>
-                </div>
-                <div class="perm-legend-item">
-                    <div class="dot" style="background: #fef3c7;"></div>
-                    <span>Grupo (group)</span>
-                </div>
-                <div class="perm-legend-item">
-                    <div class="dot" style="background: #fee2e2;"></div>
-                    <span>Outros (others)</span>
+            <div style="text-align: center; margin: 20px 0;">
+                <div class="content-box box-highlight" style="display: inline-block; max-width: 600px;">
+                    <p style="font-size: 1.2em;"><strong>-rwxr-xr--</strong></p>
+                    <p style="margin-top: 10px;">Tradução: Arquivo comum. Dono: tudo (7). Grupo: ler+executar (5). Outros: só ler (4).</p>
+                    <p style="margin-top: 10px; color: var(--primary); font-weight: bold;">Modo octal = 754</p>
                 </div>
             </div>
 
@@ -484,149 +459,35 @@
             </div>
         </div>
 
-        <!-- SLIDE 5: Sistema Octal -->
-        <div class="slide-card">
-            <h2 class="slide-subtitle">🔢 Sistema Octal (Números)</h2>
-            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
-                <p style="font-size: 1.2em;">Cada permissão tem um <strong>valor numérico</strong>!</p>
-            </div>
-
-            <div class="grid-3" style="margin-bottom: 25px;">
-                <div class="content-box box-success" style="text-align: center;">
-                    <h3 style="font-size: 2.5em;">4</h3>
-                    <p><strong>r</strong> (read)</p>
-                </div>
-                <div class="content-box box-highlight" style="text-align: center;">
-                    <h3 style="font-size: 2.5em;">2</h3>
-                    <p><strong>w</strong> (write)</p>
-                </div>
-                <div class="content-box box-warning" style="text-align: center;">
-                    <h3 style="font-size: 2.5em;">1</h3>
-                    <p><strong>x</strong> (execute)</p>
-                </div>
-            </div>
-
-            <div class="octal-calc">
-                <div class="octal-group">
-                    <h4>Dono</h4>
-                    <div class="octal-perms">
-                        <div class="octal-perm r">r</div>
-                        <div class="octal-perm w">w</div>
-                        <div class="octal-perm x">x</div>
-                    </div>
-                    <div class="octal-value">7</div>
-                    <small>4+2+1</small>
-                </div>
-                <div class="octal-group">
-                    <h4>Grupo</h4>
-                    <div class="octal-perms">
-                        <div class="octal-perm r">r</div>
-                        <div class="octal-perm" style="background:#e2e8f0;">-</div>
-                        <div class="octal-perm x">x</div>
-                    </div>
-                    <div class="octal-value">5</div>
-                    <small>4+0+1</small>
-                </div>
-                <div class="octal-group">
-                    <h4>Outros</h4>
-                    <div class="octal-perms">
-                        <div class="octal-perm r">r</div>
-                        <div class="octal-perm" style="background:#e2e8f0;">-</div>
-                        <div class="octal-perm" style="background:#e2e8f0;">-</div>
-                    </div>
-                    <div class="octal-value">4</div>
-                    <small>4+0+0</small>
-                </div>
-            </div>
-
-            <div class="content-box box-info" style="text-align: center;">
-                <p style="font-size: 1.2em;"><code>rwxr-xr--</code> = <strong>754</strong></p>
-            </div>
-        </div>
-
-        <!-- SLIDE 6: Permissões comuns -->
-        <div class="slide-card">
-            <h2 class="slide-subtitle">📋 Permissões Comuns</h2>
-            <div class="grid-2">
-                <div class="content-box box-info">
-                    <h3>📄 Arquivos</h3>
-                    <div class="bullet-point"><code>644</code> → rw-r--r-- (padrão)</div>
-                    <div class="bullet-point"><code>755</code> → rwxr-xr-x (executável)</div>
-                    <div class="bullet-point"><code>600</code> → rw------- (privado)</div>
-                    <div class="bullet-point"><code>777</code> → rwxrwxrwx (⚠️ perigoso!)</div>
-                </div>
-                <div class="content-box box-highlight">
-                    <h3>📁 Pastas</h3>
-                    <div class="bullet-point"><code>755</code> → rwxr-xr-x (padrão)</div>
-                    <div class="bullet-point"><code>700</code> → rwx------ (só dono)</div>
-                    <div class="bullet-point"><code>775</code> → rwxrwxr-x (grupo pode escrever)</div>
-                </div>
-            </div>
-
-            <div class="content-box box-warning" style="margin-top: 20px;">
-                <h3>⚠️ Nunca use 777!</h3>
-                <p>Dar permissão total a todos é um <strong>risco de segurança</strong>. Qualquer um pode modificar ou executar!</p>
-            </div>
-        </div>
-
-        <!-- SLIDE 7: chmod -->
+        <!-- SLIDE 5: chmod -->
         <div class="slide-card">
             <h2 class="slide-subtitle">🔧 chmod: Alterando Permissões</h2>
-            <div class="section-divider">CHange MODe - Muda as permissões</div>
+            <div class="section-divider">CHange MODe - Muda as permissões básicas</div>
             
             <div class="box-terminal">
-                <span class="comment"># Sintaxe: chmod [permissões] arquivo</span><br><br>
-
-                <span class="comment"># Modo OCTAL (números)</span><br>
+                <span class="comment"># Modo OCTAL (números) - mais usado!</span><br>
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 755 script.sh</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 644 documento.txt</span><br><br>
+                <span class="comment"># rwxr-xr-x (dono:tudo, outros:ler+executar)</span><br><br>
+
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 644 documento.txt</span><br>
+                <span class="comment"># rw-r--r-- (dono:ler+escrever, outros:só ler)</span><br><br>
 
                 <span class="comment"># Modo SIMBÓLICO (letras)</span><br>
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod u+x script.sh</span> <span class="comment"># Adiciona execução ao dono</span><br>
                 <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod g-w arquivo.txt</span> <span class="comment"># Remove escrita do grupo</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod o=r arquivo.txt</span> <span class="comment"># Define só leitura para outros</span>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod o=r arquivo.txt</span> <span class="comment"># Outros: só leitura</span>
             </div>
 
             <div class="content-box box-info" style="margin-top: 20px;">
                 <h3>💡 Modo Simbólico</h3>
-                <div class="grid-2">
-                    <div>
-                        <strong>Quem:</strong> u (user/dono), g (group), o (others), a (all)
-                    </div>
-                    <div>
-                        <strong>Ação:</strong> + (adiciona), - (remove), = (define)
-                    </div>
-                </div>
+                <strong>Quem:</strong> u (dono), g (grupo), o (outros), a (todos) • 
+                <strong>Ação:</strong> + (adiciona), - (remove), = (define exato)
             </div>
         </div>
 
-        <!-- SLIDE 8: chmod exemplos práticos -->
+        <!-- SLIDE 6: chown e chgrp -->
         <div class="slide-card">
-            <h2 class="slide-subtitle">🎯 chmod: Exemplos Práticos</h2>
-            <div class="box-terminal">
-                <span class="comment"># Tornar script executável</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod +x meu_script.sh</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">./meu_script.sh</span> <span class="comment"># Agora funciona!</span><br><br>
-
-                <span class="comment"># Proteger arquivo sensível (só dono lê/escreve)</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 600 senhas.txt</span><br><br>
-
-                <span class="comment"># Pasta compartilhada (grupo pode escrever)</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 775 /projeto/compartilhado</span><br><br>
-
-                <span class="comment"># Aplicar recursivamente em pasta</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod -R 755 /var/www/html</span>
-            </div>
-
-            <div class="content-box box-success" style="margin-top: 20px;">
-                <h3>💡 Dica: chmod +x</h3>
-                <p>O atalho <code>chmod +x arquivo</code> adiciona permissão de execução para todos. É o mais usado para scripts!</p>
-            </div>
-        </div>
-
-        <!-- SLIDE 9: chown e chgrp -->
-        <div class="slide-card">
-            <h2 class="slide-subtitle">👤 chown e chgrp: Mudando Dono</h2>
+            <h2 class="slide-subtitle">👤 chown e chgrp: Mudando Proprietário</h2>
             <div class="grid-2">
                 <div class="content-box box-info">
                     <h3>👤 chown (Change Owner)</h3>
@@ -647,165 +508,253 @@
             </div>
 
             <div class="box-terminal" style="margin-top: 20px;">
-                <span class="comment"># Mudar dono E grupo de uma vez</span><br>
+                <span class="comment"># Mudar dono E grupo de uma vez (atalho!)</span><br>
                 <span class="prompt">root@linux</span>:~# <span class="command">chown joao:vendas relatorio.pdf</span><br><br>
 
-                <span class="comment"># Recursivo (toda a pasta)</span><br>
+                <span class="comment"># Recursivo (toda a pasta e subpastas)</span><br>
                 <span class="prompt">root@linux</span>:~# <span class="command">chown -R www-data:www-data /var/www/html</span>
             </div>
 
             <div class="content-box box-warning" style="margin-top: 15px;">
-                <p>⚠️ <strong>Precisa de root!</strong> Só o administrador pode mudar donos de arquivos.</p>
+                <p>⚠️ <strong>Precisa de root/sudo!</strong> Só o administrador pode mudar donos.</p>
             </div>
         </div>
 
-        <!-- SLIDE 10: umask -->
+        <!-- SLIDE 7: Limitações das permissões tradicionais -->
         <div class="slide-card">
-            <h2 class="slide-subtitle">🎭 umask: Permissões Padrão</h2>
-            <div class="content-box box-highlight" style="text-align: center; margin-bottom: 20px;">
-                <p style="font-size: 1.1em;">O <strong>umask</strong> define as permissões padrão de novos arquivos!</p>
+            <h2 class="slide-subtitle">❌ Problema: Permissões Tradicionais</h2>
+            
+            <div class="content-box box-warning">
+                <h3>🚫 Limitação do sistema rwx</h3>
+                <p style="font-size: 1.1em; line-height: 1.6;">O sistema tradicional só permite definir permissões para:</p>
+                <div class="bullet-point"><strong>1 dono</strong></div>
+                <div class="bullet-point"><strong>1 grupo</strong></div>
+                <div class="bullet-point"><strong>Todos os outros</strong></div>
+            </div>
+
+            <div class="content-box box-highlight" style="margin-top: 20px;">
+                <h3>🤔 Situação real:</h3>
+                <p>Você tem um arquivo <code>relatorio.pdf</code> e precisa que:</p>
+                <div class="bullet-point">Maria (vendas) possa <strong>ler e escrever</strong></div>
+                <div class="bullet-point">João (marketing) possa <strong>só ler</strong></div>
+                <div class="bullet-point">Carlos (TI) possa <strong>ler e escrever</strong></div>
+                <div class="bullet-point">Outros não acessem</div>
+            </div>
+
+            <div class="content-box box-warning" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1.3em;">😵 <strong>Impossível com chmod!</strong></p>
+                <p style="margin-top: 10px;">São 3 usuários diferentes com permissões diferentes!</p>
+            </div>
+
+            <div class="content-box box-success" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1.2em;">✅ <strong>Solução: ACL!</strong></p>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: O que é ACL -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 O que é ACL?</h2>
+            <div class="section-divider">Access Control List - Lista de Controle de Acesso</div>
+
+            <div class="content-box box-info" style="text-align: center; margin-bottom: 25px;">
+                <p style="font-size: 1.3em;">ACL permite criar <strong>regras extras</strong> de permissão!</p>
+                <p style="margin-top: 10px;">Você pode dar permissões específicas para vários usuários e grupos!</p>
             </div>
 
             <div class="grid-2">
-                <div class="content-box box-info">
-                    <h3>🤔 Como funciona?</h3>
-                    <p>O umask <strong>subtrai</strong> permissões do máximo:</p>
-                    <div class="bullet-point">Arquivos: 666 - umask</div>
-                    <div class="bullet-point">Pastas: 777 - umask</div>
-                    <p style="margin-top: 15px;"><strong>Exemplo:</strong> umask 022</p>
-                    <p>Arquivos: 666 - 022 = <strong>644</strong></p>
-                    <p>Pastas: 777 - 022 = <strong>755</strong></p>
+                <div class="content-box box-warning">
+                    <h3>🔴 Sem ACL</h3>
+                    <div class="bullet-point">1 dono apenas</div>
+                    <div class="bullet-point">1 grupo apenas</div>
+                    <div class="bullet-point">Regras genéricas</div>
+                    <div class="bullet-point">Limitado!</div>
                 </div>
                 <div class="content-box box-success">
-                    <h3>📋 Valores comuns</h3>
-                    <div class="bullet-point"><code>022</code> → Padrão (644/755)</div>
-                    <div class="bullet-point"><code>027</code> → Mais restritivo</div>
-                    <div class="bullet-point"><code>077</code> → Só dono acessa</div>
+                    <h3>🟢 Com ACL</h3>
+                    <div class="bullet-point">Múltiplos usuários</div>
+                    <div class="bullet-point">Múltiplos grupos</div>
+                    <div class="bullet-point">Regras específicas</div>
+                    <div class="bullet-point">Flexível! 🎉</div>
                 </div>
             </div>
 
             <div class="box-terminal" style="margin-top: 20px;">
-                <span class="comment"># Ver umask atual</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">umask</span><br>
-                <span class="output">0022</span><br><br>
-
-                <span class="comment"># Mudar umask (só para sessão atual)</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">umask 027</span>
+                <span class="comment"># Exemplo: dar permissão específica para "maria"</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m u:maria:rw relatorio.pdf</span><br>
+                <span class="comment"># Maria pode ler e escrever, sem alterar permissões de outros!</span>
             </div>
         </div>
 
-        <!-- SLIDE 11: Permissões especiais -->
+        <!-- SLIDE 9: getfacl - visualizando ACL -->
         <div class="slide-card">
-            <h2 class="slide-subtitle">⭐ Permissões Especiais</h2>
-            <div class="grid-3">
-                <div class="content-box box-warning" style="text-align: center;">
-                    <h3>SUID</h3>
-                    <p style="font-size: 2em;">4---</p>
-                    <p>Executa com permissão do <strong>dono</strong></p>
-                    <p style="margin-top: 10px; font-size: 0.9em;"><code>chmod 4755</code></p>
-                </div>
-                <div class="content-box box-highlight" style="text-align: center;">
-                    <h3>SGID</h3>
-                    <p style="font-size: 2em;">2---</p>
-                    <p>Herda <strong>grupo</strong> da pasta pai</p>
-                    <p style="margin-top: 10px; font-size: 0.9em;"><code>chmod 2755</code></p>
-                </div>
-                <div class="content-box box-info" style="text-align: center;">
-                    <h3>Sticky Bit</h3>
-                    <p style="font-size: 2em;">1---</p>
-                    <p>Só dono pode <strong>deletar</strong></p>
-                    <p style="margin-top: 10px; font-size: 0.9em;"><code>chmod 1777</code></p>
-                </div>
-            </div>
-
-            <div class="box-terminal" style="margin-top: 20px;">
-                <span class="comment"># Exemplo: /tmp tem Sticky Bit (t no final)</span><br>
-                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -ld /tmp</span><br>
-                <span class="output">drwxrwxrw<span class="highlight">t</span> 10 root root 4096 jan 15 /tmp</span><br>
-                <span class="comment"># Todos podem criar, mas só o dono pode deletar seus arquivos!</span>
-            </div>
-        </div>
-
-        <!-- SLIDE 12: Resumo Comandos -->
-        <div class="slide-card">
-            <h2 class="slide-subtitle">📋 Resumo dos Comandos</h2>
-            <div class="grid-3">
-                <div class="command-card">
-                    <div class="cmd">chmod</div>
-                    <h4>Muda Permissões</h4>
-                    <p>chmod 755 arquivo</p>
-                </div>
-                <div class="command-card">
-                    <div class="cmd">chown</div>
-                    <h4>Muda Dono</h4>
-                    <p>chown user arquivo</p>
-                </div>
-                <div class="command-card">
-                    <div class="cmd">chgrp</div>
-                    <h4>Muda Grupo</h4>
-                    <p>chgrp grupo arquivo</p>
-                </div>
-                <div class="command-card">
-                    <div class="cmd">umask</div>
-                    <h4>Permissão Padrão</h4>
-                    <p>umask 022</p>
-                </div>
-                <div class="command-card">
-                    <div class="cmd">ls -l</div>
-                    <h4>Ver Permissões</h4>
-                    <p>Lista detalhada</p>
-                </div>
-                <div class="command-card">
-                    <div class="cmd">stat</div>
-                    <h4>Info Completa</h4>
-                    <p>stat arquivo</p>
-                </div>
-            </div>
-            <div class="content-box box-success" style="margin-top: 25px; text-align: center;">
-                <p style="font-size: 1.1em;">💡 <strong>Lembre:</strong> r=4, w=2, x=1 → Some para obter o número!</p>
-            </div>
-        </div>
-
-        <!-- SLIDE 13: Quiz -->
-        <div class="slide-card">
-            <h2 class="slide-subtitle">🎯 Desafio Interativo</h2>
-            <p style="text-align: center; margin-bottom: 15px;">Arraste as permissões/comandos para suas funções!</p>
+            <h2 class="slide-subtitle">🔍 getfacl: Ver ACL</h2>
             
-            <div class="drag-drop-container">
-                <div class="col-questions">
-                    <div class="question-item">
-                        <div class="question-text">Leitura + Escrita + Execução</div>
-                        <div class="drop-zone" data-correct="7">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Só leitura</div>
-                        <div class="drop-zone" data-correct="4">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Altera permissões</div>
-                        <div class="drop-zone" data-correct="chmod">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Muda o dono</div>
-                        <div class="drop-zone" data-correct="chown">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">Permissão padrão</div>
-                        <div class="drop-zone" data-correct="umask">Arraste aqui</div>
-                    </div>
-                    <div class="question-item">
-                        <div class="question-text">rwxr-xr-x em octal</div>
-                        <div class="drop-zone" data-correct="755">Arraste aqui</div>
-                    </div>
-                </div>
-                <div class="col-answers" id="answersPool"></div>
+            <div class="box-terminal">
+                <span class="comment"># Ver permissões normais</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">ls -l projeto.txt</span><br>
+                <span class="output">-rw-r--r--+ 1 usuario grupo 2048 jan 15 projeto.txt</span><br>
+                <span class="comment"># O sinal + indica que tem ACL!</span><br><br>
+
+                <span class="comment"># Ver todas as ACLs do arquivo</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">getfacl projeto.txt</span><br>
+                <span class="output"># file: projeto.txt</span><br>
+                <span class="output"># owner: usuario</span><br>
+                <span class="output"># group: grupo</span><br>
+                <span class="output">user::rw-</span><br>
+                <span class="output">user:maria:rw-</span> <span class="comment"># ACL especial para maria!</span><br>
+                <span class="output">user:joao:r--</span> <span class="comment"># ACL especial para joao!</span><br>
+                <span class="output">group::r--</span><br>
+                <span class="output">mask::rw-</span><br>
+                <span class="output">other::r--</span>
             </div>
 
-            <div style="text-align: center; margin-top: 18px; display: flex; gap: 10px; justify-content: center;">
-                <button onclick="checkAnswers()" class="nav-btn" style="background: var(--accent-green);">✅ Verificar</button>
-                <button onclick="resetQuiz()" class="nav-btn" style="background: var(--accent-red);">🔄 Reiniciar</button>
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>💡 Lendo o getfacl:</h3>
+                <div class="bullet-point"><code>user::</code> = dono padrão</div>
+                <div class="bullet-point"><code>user:nome:</code> = ACL para usuário específico</div>
+                <div class="bullet-point"><code>group:nome:</code> = ACL para grupo específico</div>
+                <div class="bullet-point"><code>mask::</code> = permissões máximas permitidas</div>
             </div>
-            <div id="quizResult" class="quiz-result"></div>
+        </div>
+
+        <!-- SLIDE 10: setfacl - definindo ACL -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">⚙️ setfacl: Definir ACL</h2>
+            
+            <div class="box-terminal">
+                <span class="comment"># Dar permissão rw para usuário maria</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m u:maria:rw arquivo.txt</span><br><br>
+
+                <span class="comment"># Dar permissão só de leitura para joão</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m u:joao:r arquivo.txt</span><br><br>
+
+                <span class="comment"># Dar permissão para o grupo "vendas"</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m g:vendas:rwx /projeto</span><br><br>
+
+                <span class="comment"># Remover ACL de um usuário específico</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -x u:maria arquivo.txt</span><br><br>
+
+                <span class="comment"># Remover TODAS as ACLs</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -b arquivo.txt</span>
+            </div>
+
+            <div class="content-box box-info" style="margin-top: 20px;">
+                <h3>💡 Sintaxe do setfacl:</h3>
+                <p><code>setfacl -m u:usuario:permissões arquivo</code></p>
+                <p><code>setfacl -m g:grupo:permissões arquivo</code></p>
+                <p style="margin-top: 10px;"><strong>-m</strong> = modificar | <strong>-x</strong> = remover específica | <strong>-b</strong> = remover todas</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: ACL recursiva e padrão -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📁 ACL em Pastas</h2>
+            
+            <div class="content-box box-highlight" style="margin-bottom: 20px;">
+                <h3>🔄 ACL Recursiva</h3>
+                <p>Aplica a todos os arquivos/pastas existentes dentro da pasta</p>
+            </div>
+
+            <div class="box-terminal" style="margin-bottom: 20px;">
+                <span class="comment"># Aplicar ACL em tudo que já existe dentro da pasta</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -R -m u:maria:rwx /projeto</span><br>
+                <span class="comment"># -R aplica recursivamente</span>
+            </div>
+
+            <div class="content-box box-success" style="margin-bottom: 20px;">
+                <h3>🎯 ACL Padrão (Default)</h3>
+                <p>Define ACL que será <strong>herdada</strong> por novos arquivos criados dentro da pasta!</p>
+            </div>
+
+            <div class="box-terminal">
+                <span class="comment"># Novos arquivos criados em /projeto herdarão essa ACL</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -d -m u:maria:rwx /projeto</span><br>
+                <span class="comment"># -d define como padrão (default)</span><br><br>
+
+                <span class="comment"># Combinar recursiva + padrão (o ideal!)</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -R -d -m u:maria:rwx /projeto</span><br>
+                <span class="comment"># Aplica agora E para futuros arquivos!</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Exemplo prático completo -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">🎯 Exemplo Prático: Projeto Compartilhado</h2>
+            
+            <div class="content-box box-info" style="margin-bottom: 15px;">
+                <h3>📋 Cenário:</h3>
+                <p>Pasta <code>/projeto</code> precisa:</p>
+                <div class="bullet-point">Maria e Carlos: acesso total</div>
+                <div class="bullet-point">João: só leitura</div>
+                <div class="bullet-point">Grupo vendas: acesso total</div>
+            </div>
+
+            <div class="box-terminal">
+                <span class="comment"># 1. Criar pasta e definir permissões base</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">mkdir /projeto</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">chmod 750 /projeto</span><br><br>
+
+                <span class="comment"># 2. Adicionar ACLs para usuários específicos</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m u:maria:rwx /projeto</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m u:carlos:rwx /projeto</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m u:joao:r-x /projeto</span><br><br>
+
+                <span class="comment"># 3. Adicionar ACL para grupo</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -m g:vendas:rwx /projeto</span><br><br>
+
+                <span class="comment"># 4. Aplicar recursivamente ao conteúdo existente</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -R -m u:maria:rwx /projeto</span><br><br>
+
+                <span class="comment"># 5. Definir como padrão para novos arquivos</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -d -m u:maria:rwx /projeto</span><br>
+                <span class="prompt">usuario@linux</span>:~$ <span class="command">setfacl -d -m u:carlos:rwx /projeto</span>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Resumo e comandos -->
+        <div class="slide-card">
+            <h2 class="slide-subtitle">📋 Resumo: Permissões vs ACL</h2>
+            
+            <div class="grid-2" style="margin-bottom: 25px;">
+                <div class="content-box box-info">
+                    <h3>🔧 Permissões Tradicionais</h3>
+                    <div class="command-card" style="margin-top: 10px;">
+                        <div class="cmd">chmod</div>
+                        <p>chmod 755 arquivo</p>
+                    </div>
+                    <div class="command-card">
+                        <div class="cmd">chown</div>
+                        <p>chown user:group arquivo</p>
+                    </div>
+                    <div class="bullet-point">Sistema simples</div>
+                    <div class="bullet-point">1 dono, 1 grupo</div>
+                    <div class="bullet-point">Use para casos básicos</div>
+                </div>
+                <div class="content-box box-success">
+                    <h3>🎯 ACL Avançada</h3>
+                    <div class="command-card" style="margin-top: 10px;">
+                        <div class="cmd">getfacl</div>
+                        <p>getfacl arquivo</p>
+                    </div>
+                    <div class="command-card">
+                        <div class="cmd">setfacl</div>
+                        <p>setfacl -m u:user:rwx arquivo</p>
+                    </div>
+                    <div class="bullet-point">Sistema flexível</div>
+                    <div class="bullet-point">Múltiplos usuários/grupos</div>
+                    <div class="bullet-point">Use quando precisar controle fino</div>
+                </div>
+            </div>
+
+            <div class="content-box box-highlight">
+                <h3>💡 Principais comandos ACL:</h3>
+                <div class="bullet-point"><code>setfacl -m u:usuario:rwx arquivo</code> → adiciona ACL para usuário</div>
+                <div class="bullet-point"><code>setfacl -m g:grupo:rx arquivo</code> → adiciona ACL para grupo</div>
+                <div class="bullet-point"><code>setfacl -R -m ...</code> → aplica recursivamente</div>
+                <div class="bullet-point"><code>setfacl -d -m ...</code> → define ACL padrão</div>
+                <div class="bullet-point"><code>setfacl -x u:usuario arquivo</code> → remove ACL específica</div>
+                <div class="bullet-point"><code>setfacl -b arquivo</code> → remove todas as ACLs</div>
+            </div>
         </div>
 
         <!-- SLIDE 14: Conclusão -->
@@ -818,22 +767,28 @@
                     <div class="grid-2" style="text-align: left; margin-top: 15px;">
                         <div>
                             <div class="bullet-point">r=4, w=2, x=1</div>
-                            <div class="bullet-point">Dono, Grupo, Outros</div>
-                            <div class="bullet-point"><code>chmod</code> muda permissões</div>
+                            <div class="bullet-point">chmod, chown, chgrp</div>
+                            <div class="bullet-point">Limitações do rwx</div>
                         </div>
                         <div>
-                            <div class="bullet-point"><code>chown</code> muda dono</div>
-                            <div class="bullet-point"><code>umask</code> define padrão</div>
-                            <div class="bullet-point">Permissões especiais</div>
+                            <div class="bullet-point">ACL para controle avançado</div>
+                            <div class="bullet-point">getfacl e setfacl</div>
+                            <div class="bullet-point">ACL padrão e recursiva</div>
                         </div>
                     </div>
                 </div>
                 <div class="content-box box-highlight" style="max-width: 750px; margin-top: 20px;">
                     <h3>🎯 Pratique:</h3>
-                    <p style="font-family: monospace; font-size: 1em; margin-top: 10px;">
-                        <code>touch teste.sh && chmod 755 teste.sh && ls -l teste.sh</code>
-                    </p>
-                    <p style="margin-top: 10px;">Cria arquivo, dá permissão de execução e verifica!</p>
+                    <div style="font-family: monospace; font-size: 0.95em; margin-top: 10px; text-align: left;">
+                        <code>mkdir teste</code><br>
+                        <code>touch teste/arquivo.txt</code><br>
+                        <code>setfacl -m u:maria:rwx teste/arquivo.txt</code><br>
+                        <code>getfacl teste/arquivo.txt</code>
+                    </div>
+                    <p style="margin-top: 12px;">Crie, adicione ACL e verifique!</p>
+                </div>
+                <div class="content-box box-info" style="max-width: 750px; margin-top: 20px;">
+                    <p style="font-size: 1.1em;">🔑 <strong>Lembre:</strong> Use chmod para casos simples, ACL quando precisar de controle específico!</p>
                 </div>
                 <div style="margin-top: 35px;">
                     <a href="index.html" class="nav-btn" style="font-size: 1.2em; padding: 15px 40px;">Voltar ao Dashboard 🏠</a>
@@ -875,81 +830,7 @@
             if (e.key === 'ArrowRight') changeSlide(1);
         });
 
-        const answersData = [
-            { id: '7', text: '7' },
-            { id: '4', text: '4' },
-            { id: 'chmod', text: 'chmod' },
-            { id: 'chown', text: 'chown' },
-            { id: 'umask', text: 'umask' },
-            { id: '755', text: '755' }
-        ];
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        let draggedItem = null;
-
-        function initQuiz() {
-            const pool = document.getElementById('answersPool');
-            pool.innerHTML = '';
-            shuffleArray([...answersData]).forEach(ans => {
-                const div = document.createElement('div');
-                div.className = 'answer-item';
-                div.draggable = true;
-                div.textContent = ans.text;
-                div.dataset.id = ans.id;
-                div.addEventListener('dragstart', (e) => { draggedItem = e.target; e.target.classList.add('dragging'); });
-                div.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggedItem = null; });
-                pool.appendChild(div);
-            });
-
-            document.querySelectorAll('.drop-zone').forEach(zone => {
-                zone.innerHTML = 'Arraste aqui';
-                zone.classList.remove('has-answer');
-                zone.style.background = '#f8fafc';
-                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
-                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-                zone.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    zone.classList.remove('drag-over');
-                    if (draggedItem && !zone.querySelector('.answer-item')) {
-                        zone.innerHTML = '';
-                        zone.appendChild(draggedItem);
-                        draggedItem.classList.add('in-drop-zone');
-                        zone.classList.add('has-answer');
-                    }
-                });
-            });
-            document.getElementById('quizResult').style.display = 'none';
-        }
-
-        function checkAnswers() {
-            let correct = 0;
-            const zones = document.querySelectorAll('.drop-zone');
-            zones.forEach(zone => {
-                const answer = zone.querySelector('.answer-item');
-                if (answer && answer.dataset.id === zone.dataset.correct) {
-                    correct++;
-                    zone.style.background = '#d1fae5';
-                } else {
-                    zone.style.background = '#fee2e2';
-                }
-            });
-            const resultDiv = document.getElementById('quizResult');
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `<h3>Você acertou ${correct} de ${zones.length}!</h3>`;
-            if(correct === zones.length) resultDiv.innerHTML += '<p>🎉 Perfeito! Você domina as permissões!</p>';
-            else if(correct >= zones.length/2) resultDiv.innerHTML += '<p>👍 Bom trabalho!</p>';
-            else resultDiv.innerHTML += '<p>📚 Revise r=4, w=2, x=1!</p>';
-        }
-
-        function resetQuiz() { initQuiz(); }
-        initQuiz();
+        showSlide(0);
     </script>
 </body>
 </html>
